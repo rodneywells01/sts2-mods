@@ -5,6 +5,7 @@
     "PASS Panel lists roster",
     "PASS All excluded preserves lobby choice",
     "PASS Twenty random picks honor single eligible character",
+    "PASS Changed and repeated rolls each emit exactly one character sound and screen shake",
     "PASS Disabled mode restores vanilla Random placeholder",
     "PASS Disabled activation does not roll custom choice",
     "PASS Enabling resolves pending vanilla Random through whitelist",

@@ -1,4 +1,4 @@
-RANDOM CHARACTER OPTIONS 0.1.1 - PREVIEW
+RANDOM CHARACTER OPTIONS 0.1.2 - PREVIEW
 For Slay the Spire 2 v0.111.0 on Windows
 
 START HERE: Open INSTALL.md for the short, step-by-step installation guide.
@@ -59,7 +59,3 @@ TROUBLESHOOTING
 If blocked by game-version checking, request a matching build.
 If the mod is listed but fails to work, check the game's logs/godot.log under its
 user-data folder for RandomCharacterBlacklist messages. Report the game version.
-
-
-
-

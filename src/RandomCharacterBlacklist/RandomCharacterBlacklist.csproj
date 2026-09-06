@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2</GameDir>
     <GameData>$(GameDir)\data_sts2_windows_x86_64</GameData>
   </PropertyGroup>
@@ -18,4 +18,3 @@
     <Error Condition="!Exists('$(GameData)\sts2.dll')" Text="Game assembly missing. Set -p:GameDir to the Slay the Spire 2 installation directory." />
   </Target>
 </Project>
-

@@ -114,7 +114,7 @@ try {
             }
             throw $installationError
         }
-        Write-Host "Installed Random Character Options 0.1.1 in:`n$destination"
+        Write-Host "Installed Random Character Options 0.1.2 in:`n$destination"
         Write-Host 'Start the game, enable mods when prompted, and check Settings > Mod Settings.'
         Write-Host 'On character select, open Random options (F8). No BaseLib or other download is required.'
     }
@@ -126,5 +126,3 @@ catch {
     exit 1
 }
 if (-not $NoPause) { Read-Host 'Press Enter to close' | Out-Null }
-
-

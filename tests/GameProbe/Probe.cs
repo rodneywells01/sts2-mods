@@ -11,10 +11,15 @@ public static class Probe
     private static string role = System.Environment.GetEnvironmentVariable("RCB_PROBE_ROLE") ?? "host";
     private static string output = System.Environment.GetEnvironmentVariable("RCB_PROBE_OUTPUT") ?? throw new Exception("Probe requires output path");
     private static bool started;
+    private static int selectionSounds;
+    private static int selectionShakes;
+    private static string? expectedSound;
     private static readonly List<string> checks = new();
     public static void Initialize()
     {
         var harmony = new Harmony("rcb.integration.probe");
+        harmony.Patch(AccessTools.Method(typeof(MegaCrit.Sts2.Core.Commands.SfxCmd), "Play", new[] { typeof(string), typeof(float) }), prefix: new HarmonyMethod(typeof(Probe), nameof(Sound)));
+        harmony.Patch(AccessTools.Method(typeof(MegaCrit.Sts2.Core.Nodes.NGame), "ScreenShake"), prefix: new HarmonyMethod(typeof(Probe), nameof(Shake)));
         harmony.Patch(AccessTools.Method(typeof(NCharacterSelectScreen), "AfterInitialized"), postfix: new HarmonyMethod(typeof(Probe), nameof(Ready)));
         harmony.Patch(AccessTools.Method(typeof(StartRunLobby), "BeginRunLocally"), postfix: new HarmonyMethod(typeof(Probe), nameof(Began)));
         // Synthetic UI profiles have no progression. Reapply their test roster
@@ -30,6 +35,8 @@ public static class Probe
         GD.Print("[RCBProbe] " + check);
     }
     private static void Assert(bool condition, string text) { if (!condition) throw new Exception(text); Record("PASS " + text); }
+    private static void Sound(string sfx) { if (expectedSound != null && sfx == expectedSound) selectionSounds++; }
+    private static void Shake() { if (expectedSound != null) selectionShakes++; }
     private static void PreviewRoster(NCharacterSelectScreen __instance)
     {
         foreach (var button in __instance.GetNode<Control>("CharSelectButtons/ButtonContainer").GetChildren().OfType<NCharacterSelectButton>())
@@ -107,12 +114,18 @@ public static class Probe
                 Assert(screen.Lobby.LocalPlayer.character.Id == previous, "All excluded preserves lobby choice");
                 var allowed = options.Single(o => o.Text.StartsWith(desired.Character.Title.GetFormattedText()));
                 allowed.ButtonPressed = true;
+                // First roll changes character; nineteen repeats must also emit feedback.
+                buttons.First(b => !b.IsRandom && b != desired).Select();
+                expectedSound = desired.Character.CharacterSelectSfx;
+                selectionSounds = selectionShakes = 0;
                 for (int i = 0; i < 20; i++)
                 {
                     random.ForceClick();
                     if (screen.Lobby.LocalPlayer.character != desired.Character) throw new Exception("Forbidden random character");
                 }
                 Assert(screen.Lobby.LocalPlayer.character == desired.Character, "Twenty random picks honor single eligible character");
+                expectedSound = null;
+                Assert(selectionSounds == 20 && selectionShakes == 20, "Changed and repeated rolls each emit exactly one character sound and screen shake");
                 mode.ButtonPressed = false;
                 random.Select();
                 Assert(screen.Lobby.LocalPlayer.character is MegaCrit.Sts2.Core.Models.Characters.RandomCharacter, "Disabled mode restores vanilla Random placeholder");

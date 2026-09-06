@@ -10,7 +10,7 @@ The Select prefix suppresses the Random button's focus-triggered selection only 
 
 Roll chooses from the screen's visible, unlocked, non-random buttons after subtracting saved excluded IDs, then invokes the chosen button's own Select. This follows NCharacterSelectScreen.SelectCharacter → StartRunLobby.SetLocalCharacter and broadcasts the ordinary LobbyPlayerChangedCharacterMessage. No Random placeholder is submitted through the custom path.
 
-The current result can legitimately repeat; the header pulses on every roll. Disabling Custom Random allows the original Select method and skips custom activation behavior, restoring native seeded Random at embark. Enabling with a pending native Random choice immediately resolves it through the whitelist; enabling is blocked if that cannot produce a legal choice. No global roster, run RNG, network message, or teammate selection is changed.
+The current result can legitimately repeat; the header pulses on every roll. Because native Select skips an already-selected button, repeated custom picks explicitly replay CharacterSelectSfx and the native weak/short 90-degree screen shake; changed picks retain native feedback without duplication. Disabling Custom Random allows the original Select method and skips custom activation behavior, restoring native seeded Random at embark. Enabling with a pending native Random choice immediately resolves it through the whitelist; enabling is blocked if that cannot produce a legal choice. No global roster, run RNG, network message, or teammate selection is changed.
 
 ## UI and persistence
 
@@ -20,7 +20,7 @@ Preferences live under `OS.GetUserDataDir()/RandomCharacterBlacklist/preferences
 
 ## Build and package
 
-Run `scripts/Build.ps1`, optionally with `-GamePath <installation>`. It prefers the local `.tools/dotnet` SDK, builds Release, runs core tests, copies only the DLL/manifest and installer documentation, computes SHA-256 hashes, and creates `dist/RandomCharacterBlacklist-0.1.1.zip`.
+Run `scripts/Build.ps1`, optionally with `-GamePath <installation>`. It prefers the local `.tools/dotnet` SDK, builds Release, runs core tests, copies only the DLL/manifest and installer documentation, computes SHA-256 hashes, and creates `dist/RandomCharacterBlacklist-0.1.2.zip`.
 
 Development tools used: Microsoft-signed `dotnet-install.ps1`; workspace-local .NET SDK 9.0.317; ILSpyCmd 9.1.0.7988. Tools, game copies, decompiled research, synthetic saves, and build outputs are ignored by Git. No game binaries or decompiled game source belong in the release or repository.
 
@@ -57,5 +57,3 @@ See the packaged `VALIDATION.md` for evidence and limits. A real Steam session w
 ## Preview lobby re-entry correction
 
 The synthetic UI probe formerly unlocked/showed the roster only once. The native game recalculates Random visibility on lobby initialization and membership changes: at least one lobby participant must have all characters unlocked. Reopening the lobby therefore hid Random again on the fresh synthetic profile. The UI-only probe now reapplies its synthetic roster after each native visibility refresh; three repeated refresh checks pass. This override is absent from the shipped mod and does not change actual player progression.
-
-

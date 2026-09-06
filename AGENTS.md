@@ -13,7 +13,7 @@ Current mod: **Random Character Options**, credited **Built by Rodney Wells (Wat
 - Use the packaged installer, for example from the repository root in PowerShell:
 
   ```powershell
-  & './dist/RandomCharacterBlacklist-0.1.1/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
+  & './dist/RandomCharacterBlacklist-0.1.2/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
   ```
 
   Substitute the actual built package version and verified game folder. `-Uninstall` removes only owned mod files; preferences remain.
@@ -48,7 +48,7 @@ Source map:
 ## Behavior to preserve
 
 - All characters default to included; manual selection remains unrestricted. Filter custom Random to visible, unlocked, included characters. An empty pool must not select a forbidden character.
-- Every Random activation rerolls, even with unchanged focus. The selected character may legitimately repeat. Use the button's activation/Released event, not focus entry, to trigger rolls.
+- Every Random activation rerolls, even with unchanged focus. The selected character may legitimately repeat; each roll must emit exactly one native character sound and screen shake, including repeats. Use the button's activation/Released event, not focus entry, to trigger rolls.
 - Custom Random off restores native selection. Never filter the game's seeded run-start Random resolution independently on each peer: that can desynchronize multiplayer.
 - Custom picks use the normal character button and native lobby synchronization. Do not change networking, run generation, or combat for this UI feature. Reassess `affects_gameplay` if scope expands.
 - The dice header is clickable and F8 opens the menu, but it has no mouse/arrow-key focus. Preserve native character-row navigation. Closing restores prior valid focus. Keep the dropdown inside screen bounds.
@@ -73,8 +73,7 @@ Local instrumented ENet tests are not proof of an uninstrumented Steam friend se
 - Check package contents: only this mod's DLL/manifest belong in its payload directory. Never ship GameProbe, game DLLs, or runtime tooling.
 - When changing versions, update manifest/project version, initializer/installer/package display strings, release notes, and versioned test paths together.
 - Use `codex/` for new development branches. Commit focused changes; preserve unrelated work. Verify the configured Git remote before pushing.
-- The GitHub repository is public; the initial release is a draft until explicitly published. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
+- The GitHub repository and v0.1.2 installer release are public. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
 - See `docs/distribution.md` for the official Workshop uploader route. Prepare listing content before seeking any needed publication approval. Avoid duplicate manual/Workshop installations and retain the generated Workshop item ID for updates.
 
 Local AI Project continuity, when available: reuse existing ignored `project-registration.json` and the `register-ai-project` skill. Do not commit local dashboard/task records or create duplicate project identities.
-

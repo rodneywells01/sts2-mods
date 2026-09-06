@@ -3,11 +3,10 @@
   "name": "Random Character Options",
   "author": "Rodney Wells",
   "description": "Choose which characters are included in Random. Every click rolls again and reveals the result. Toggle Custom Random off for vanilla behavior. Open Random options on character select (F8).",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "min_game_version": "0.111.0",
   "has_dll": true,
   "has_pck": false,
   "affects_gameplay": false,
   "dependencies": []
 }
-

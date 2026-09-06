@@ -2,8 +2,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
+using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
 
 namespace RandomCharacterBlacklist;
 
@@ -30,7 +33,7 @@ public static class Mod
         Patch(harmony, typeof(NCharacterSelectScreen), "_Ready", nameof(ScreenReady), false);
         Patch(harmony, typeof(NCharacterSelectScreen), "_Input", nameof(ScreenInput), true);
         Patch(harmony, typeof(NCharacterSelectButton), "Select", nameof(SelectPrefix), true);
-        GD.Print($"[{Id}] 0.1.1 loaded; local choice patches installed. Preferences: {PreferencePath}");
+        GD.Print($"[{Id}] 0.1.2 loaded; local choice patches installed. Preferences: {PreferencePath}");
     }
 
     private static void Patch(Harmony harmony, Type type, string target, string patch, bool prefix)
@@ -93,9 +96,15 @@ public static class Mod
                 panel.ShowMessage("Include at least one unlocked character to use Random.");
                 return;
             }
-            // Select() is intentionally a no-op when the chosen character is already selected.
-            // The lobby already has that exact character, so this is a valid random outcome.
+            // Native Select() skips an already-selected button. Replay only its feedback
+            // in that case; a changed selection already plays both effects itself.
+            bool repeated = chosen!.IsSelected;
             chosen!.Select();
+            if (repeated)
+            {
+                SfxCmd.Play(chosen.Character.CharacterSelectSfx);
+                NGame.Instance?.ScreenShake(ShakeStrength.Weak, ShakeDuration.Short, 90f);
+            }
             panel.ShowResult(chosen.Character.Title.GetFormattedText());
             GD.Print($"[{Id}] Random chose {chosen.Character.Id} from {pool.Count} eligible characters.");
         }
@@ -106,4 +115,3 @@ public static class Mod
         }
     }
 }
-
