@@ -1,6 +1,6 @@
 # Validation — September 6, 2026
 
-Preview **0.1.4**, prepared locally for review, targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. No BaseLib or PCK is required. This document distinguishes automated local tests from player reports.
+Preview **0.1.4** targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. No BaseLib or PCK is required. This document distinguishes automated local tests from player reports. The published build uses the merged PR #3 implementation unchanged; release compilation, core checks, installer fixtures, and final package integrity were verified again for publication.
 
 ## Completed for this change
 

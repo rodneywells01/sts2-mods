@@ -2,7 +2,7 @@
 
 Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Random Character Options**, a multiplayer-compatible character-selection helper.
 
-**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip)**
+**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.4/RandomCharacterBlacklist-0.1.4.zip)**
 
 **Players: [Start here — simple installation guide](INSTALL.md).**
 
@@ -10,9 +10,9 @@ Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Ran
 
 ## Current state — September 6, 2026
 
-The public installer above is **0.1.2**. This branch prepares **0.1.4** for **v0.111.0**, commit `41cef1ea`, with selectable reveal timing. Rodney reports that the prior version worked in a real Steam multiplayer match with an unmodded friend; that is player-reported validation of the prior version, not the new lock-in mode or a confirmed complete run.
+Preview **0.1.4** for **v0.111.0**, commit `41cef1ea`, includes selectable reveal timing. Rodney reports that the prior version worked in a real Steam multiplayer match with an unmodded friend; that is player-reported validation of the prior version, not the new lock-in mode or a confirmed complete run.
 
-For the local 0.1.4 review build, extract `dist/RandomCharacterBlacklist-0.1.4.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
+Extract `RandomCharacterBlacklist-0.1.4.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
 
 ## First mod behavior
 

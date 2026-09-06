@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-06",
+  "version": "0.1.4",
+  "sourceMerge": "a8ba42ac51d8068b23ffa6055b8183670bd32373",
+  "codeChangesSinceFeatureTests": false,
+  "build": "Passed, zero warnings/errors",
+  "coreAssertions": 1019,
+  "installer": "Passed Windows PowerShell 5.1 fixture suite",
+  "packageEntries": [
+    "RandomCharacterBlacklist/RandomCharacterBlacklist.dll",
+    "RandomCharacterBlacklist/RandomCharacterBlacklist.json",
+    "checksums.json",
+    "Install.cmd",
+    "INSTALL.md",
+    "Install.ps1",
+    "README.txt",
+    "VALIDATION.md"
+  ],
+  "payloadHashes": {
+    "RandomCharacterBlacklist.dll": "EC764F119524E15120F961C72745DB8A6ECADC4B7DD78E9756B6BBC54D6E4574",
+    "RandomCharacterBlacklist.json": "1FA16698F43CCAF2EB27285BDE1248FD43E22DF83D66AB2711D481B53E5C3E3D"
+  },
+  "zipSha256": "82275250BB71B98DF7D721C09F0E0ECDE6E175F5A8AACB9B1103251AA716A4E0"
+}
