@@ -7,6 +7,7 @@ internal sealed class BlacklistPanel
 {
     private readonly NCharacterSelectScreen screen;
     private readonly VBoxContainer contents;
+    private readonly PanelContainer dropdown;
     private readonly Label status;
     private readonly Button toggle;
     private readonly PanelContainer root;
@@ -16,7 +17,7 @@ internal sealed class BlacklistPanel
     private readonly CharacterPreview preview;
     private Control? previousFocus;
     private readonly List<(CheckButton Toggle, NCharacterSelectButton Character)> rows = new();
-    internal bool IsOpen => contents.Visible;
+    internal bool IsOpen => dropdown.Visible;
 
     internal IEnumerable<NCharacterSelectButton> CharacterButtons()
         => screen.GetNode<Control>("CharSelectButtons/ButtonContainer").GetChildren().OfType<NCharacterSelectButton>();
@@ -40,9 +41,12 @@ internal sealed class BlacklistPanel
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
             ContentMarginLeft = 16, ContentMarginRight = 16, ContentMarginTop = 12, ContentMarginBottom = 12
         };
-        root.AddThemeStyleboxOverride("panel", style);
+        // The root only lays out controls. Padding belongs to the dropdown, so
+        // the entire visible dice surface is the actual button's hit target.
+        root.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+        root.MouseFilter = Control.MouseFilterEnum.Ignore;
         root.AddThemeFontSizeOverride("font_size", 20);
-        var stack = new VBoxContainer();
+        var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         stack.AddThemeConstantOverride("separation", 10);
         root.AddChild(stack);
         using var dice = new Godot.Image();
@@ -58,12 +62,29 @@ internal sealed class BlacklistPanel
             </g></svg>
             """);
         toggle = new Button { Name = "RandomOptionsDice", Icon = ImageTexture.CreateFromImage(dice),
-            FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(64, 44),
+            FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(96, 68),
+            IconAlignment = HorizontalAlignment.Center,
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd, TooltipText = "Random options (F8)" };
+        foreach (var (state, background, border) in new[]
+        {
+            ("normal", "172029", "8c7953"),
+            ("hover", "22303a", "d9bd77"),
+            ("pressed", "111a22", "d9bd77"),
+            ("disabled", "172029", "8c7953")
+        })
+        {
+            var buttonStyle = (StyleBoxFlat)style.Duplicate();
+            buttonStyle.BgColor = new Color(background);
+            buttonStyle.BorderColor = new Color(border);
+            toggle.AddThemeStyleboxOverride(state, buttonStyle);
+        }
         stack.AddChild(toggle);
-        contents = new VBoxContainer { Visible = false };
+        dropdown = new PanelContainer { Visible = false };
+        dropdown.AddThemeStyleboxOverride("panel", style);
+        stack.AddChild(dropdown);
+        contents = new VBoxContainer();
         contents.AddThemeConstantOverride("separation", 7);
-        stack.AddChild(contents);
+        dropdown.AddChild(contents);
         toggle.Pressed += Toggle;
         enabled = new CheckButton { Text = "Custom Random", ButtonPressed = Mod.Preferences.Enabled, FocusMode = Control.FocusModeEnum.All };
         contents.AddChild(enabled);
@@ -182,18 +203,18 @@ internal sealed class BlacklistPanel
 
     internal void Toggle()
     {
-        if (!contents.Visible) previousFocus = screen.GetViewport().GuiGetFocusOwner();
-        contents.Visible = !contents.Visible;
-        if (contents.Visible) preview.Warm(CharacterButtons().Where(b => !b.IsRandom).Select(b => b.Character));
+        if (!dropdown.Visible) previousFocus = screen.GetViewport().GuiGetFocusOwner();
+        dropdown.Visible = !dropdown.Visible;
+        if (dropdown.Visible) preview.Warm(CharacterButtons().Where(b => !b.IsRandom).Select(b => b.Character));
         else preview.Cancel();
         Callable.From(FitPanel).CallDeferred();
         Refresh();
-        if (contents.Visible) enabled.GrabFocus();
+        if (dropdown.Visible) enabled.GrabFocus();
         else if (previousFocus != null && GodotObject.IsInstanceValid(previousFocus) && previousFocus.IsVisibleInTree() && previousFocus.FocusMode != Control.FocusModeEnum.None) previousFocus.GrabFocus();
         else screen.GetViewport().GuiGetFocusOwner()?.ReleaseFocus();
     }
 
-    internal void ShowMessage(string message) { if (!contents.Visible) Toggle(); status.Text = message; status.Visible = true; }
+    internal void ShowMessage(string message) { if (!dropdown.Visible) Toggle(); status.Text = message; status.Visible = true; }
     internal void ShowResult(string name)
     {
         toggle.TooltipText = $"Random: {name}\nRandom options (F8)";

@@ -2,7 +2,7 @@
 
 Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Random Character Options**, a multiplayer-compatible character-selection helper.
 
-**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip)**
+**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.3/RandomCharacterBlacklist-0.1.3.zip)**
 
 **Players: [Start here — simple installation guide](INSTALL.md).**
 
@@ -12,7 +12,7 @@ Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Ran
 
 Playable Windows preview built for **v0.111.0**, commit `41cef1ea`. Core and installer checks pass. Two local game processes tested both-installed, host-only, and client-only configurations with consistent lobby choices and run initialization. These instrumented local tests do not replace a real Steam friend session or full-run/combat playthrough.
 
-Extract `dist/RandomCharacterBlacklist-0.1.2.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
+Extract `dist/RandomCharacterBlacklist-0.1.3.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
 
 ## First mod behavior
 

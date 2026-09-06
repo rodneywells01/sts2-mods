@@ -1,4 +1,4 @@
-RANDOM CHARACTER OPTIONS 0.1.2 - PREVIEW
+RANDOM CHARACTER OPTIONS 0.1.3 - PREVIEW
 For Slay the Spire 2 v0.111.0 on Windows
 
 START HERE: Open INSTALL.md for the short, step-by-step installation guide.

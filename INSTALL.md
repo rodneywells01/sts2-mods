@@ -5,9 +5,9 @@
 ## Install — five steps
 
 1. **Close Slay the Spire 2 completely.**
-2. **[Download RandomCharacterBlacklist-0.1.2.zip](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip).** Use the ZIP provided by Rodney or the matching asset under [GitHub Releases](https://github.com/rodneywells01/sts2-mods/releases). Do **not** download “Source code” or use the green Code button. The installer is listed under Assets on the release page.
+2. **[Download RandomCharacterBlacklist-0.1.3.zip](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.3/RandomCharacterBlacklist-0.1.3.zip).** Use the ZIP provided by Rodney or the matching asset under [GitHub Releases](https://github.com/rodneywells01/sts2-mods/releases). Do **not** download “Source code” or use the green Code button. The installer is listed under Assets on the release page.
 3. **Right-click the downloaded ZIP → Extract All → Extract.** Open the extracted folder. You should see `Install.cmd`, `Install.ps1`, and a folder named `RandomCharacterBlacklist`. Do not run the installer from inside the ZIP.
-4. **Double-click `Install.cmd`.** It finds your Steam installation. Wait for **“Installed Random Character Options 0.1.2”**. If it asks for the game folder, follow “Find the game folder” below. An error message means installation has not completed.
+4. **Double-click `Install.cmd`.** It finds your Steam installation. Wait for **“Installed Random Character Options 0.1.3”**. If it asks for the game folder, follow “Find the game folder” below. An error message means installation has not completed.
 5. **Launch the game.** Enable mod loading if the game prompts you, and restart if requested. In **Settings → Mod Settings**, make sure **Random Character Options** is enabled.
 
 **Check it worked:** open a standard character-selection screen. A **dice icon** should appear at the top right. Click it or press **F8**.

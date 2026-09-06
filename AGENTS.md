@@ -13,7 +13,7 @@ Current mod: **Random Character Options**, credited **Built by Rodney Wells (Wat
 - Use the packaged installer, for example from the repository root in PowerShell:
 
   ```powershell
-  & './dist/RandomCharacterBlacklist-0.1.2/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
+  & './dist/RandomCharacterBlacklist-0.1.3/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
   ```
 
   Substitute the actual built package version and verified game folder. `-Uninstall` removes only owned mod files; preferences remain.
@@ -75,7 +75,7 @@ For on-demand packaging or publishing, use [.agents/skills/publish-sts2-package/
 - Check package contents: only this mod's DLL/manifest belong in its payload directory. Never ship GameProbe, game DLLs, or runtime tooling.
 - When changing versions, update manifest/project version, initializer/installer/package display strings, release notes, and versioned test paths together.
 - Use `codex/` for new development branches. Commit focused changes; preserve unrelated work. Verify the configured Git remote before pushing.
-- The GitHub repository and v0.1.2 installer release are public. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
+- The GitHub repository and v0.1.3 installer release are public. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
 - See `docs/distribution.md` for the official Workshop uploader route. Prepare listing content before seeking any needed publication approval. Avoid duplicate manual/Workshop installations and retain the generated Workshop item ID for updates.
 
 Local AI Project continuity, when available: reuse existing ignored `project-registration.json` and the `register-ai-project` skill. Do not commit local dashboard/task records or create duplicate project identities.

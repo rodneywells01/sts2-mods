@@ -14,13 +14,15 @@ The current result can legitimately repeat; the header pulses on every roll. Bec
 
 ## UI and persistence
 
+The dice header owns its full rounded background and padding, so its entire visible surface handles clicks. The layout root is transparent and ignores mouse input; the options dropdown owns a separate padded panel. Button states use uniform backgrounds with subtle hover/press feedback.
+
 The `_Ready` postfix attaches a native Godot panel at the top right. It uses `CharacterModel.IconTexture` and `NameColor`, supports F8/Escape, and routes confirmation only for a control focused inside the panel. The dice header has FocusMode.None: mouse clicks can open it, but mouse/arrow-key focus cannot select it. Native character-row navigation is preserved. The info button exposes hover help and a clickable dialog. Routine explanatory footer text is hidden; blocked/error states remain visible.
 
 Preferences live under `OS.GetUserDataDir()/RandomCharacterBlacklist/preferences.json`, outside the recursive mod-manifest scan. The interface is an inclusion list with every character on by default. Atomic replacement writes schema version 1, Enabled (default true), and excluded stable ModelId strings. Persisting the complement preserves earlier preview settings and includes newly added characters by default. Missing characters remain in preferences but cannot enter the eligible pool. Invalid settings block Random until Include all, preserving the original file. Write failure retains session choices and shows an error.
 
 ## Build and package
 
-Run `scripts/Build.ps1`, optionally with `-GamePath <installation>`. It prefers the local `.tools/dotnet` SDK, builds Release, runs core tests, copies only the DLL/manifest and installer documentation, computes SHA-256 hashes, and creates `dist/RandomCharacterBlacklist-0.1.2.zip`.
+Run `scripts/Build.ps1`, optionally with `-GamePath <installation>`. It prefers the local `.tools/dotnet` SDK, builds Release, runs core tests, copies only the DLL/manifest and installer documentation, computes SHA-256 hashes, and creates `dist/RandomCharacterBlacklist-0.1.3.zip`.
 
 Development tools used: Microsoft-signed `dotnet-install.ps1`; workspace-local .NET SDK 9.0.317; ILSpyCmd 9.1.0.7988. Tools, game copies, decompiled research, synthetic saves, and build outputs are ignored by Git. No game binaries or decompiled game source belong in the release or repository.
 

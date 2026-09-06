@@ -1,8 +1,10 @@
 # Validation — September 5, 2026
 
-Preview 0.1.2 targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. It has no BaseLib dependency and needs no PCK: icons and name colors come from the installed game.
+Preview 0.1.3 targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. It has no BaseLib dependency and needs no PCK: icons and name colors come from the installed game.
 
 ## Completed
+
+For 0.1.3, release compilation, core checks, and installer tests were rerun, and the revised dice UI was displayed in the isolated synthetic game. The broader gameplay/animation/multiplayer results below were established for 0.1.2 and were not rerun for this UI-only change.
 
 - Release compilation against the installed `sts2.dll`, `GodotSharp.dll`, and `0Harmony.dll`: zero errors/warnings.
 - Core checks: 1,014 assertions covering eligibility, locked characters, empty pools, reachable choices, enabled-mode defaults/persistence, persisted exclusions, overwriting settings, and rejecting corrupt/unsupported settings without destroying them.

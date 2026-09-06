@@ -33,7 +33,7 @@ public static class Mod
         Patch(harmony, typeof(NCharacterSelectScreen), "_Ready", nameof(ScreenReady), false);
         Patch(harmony, typeof(NCharacterSelectScreen), "_Input", nameof(ScreenInput), true);
         Patch(harmony, typeof(NCharacterSelectButton), "Select", nameof(SelectPrefix), true);
-        GD.Print($"[{Id}] 0.1.2 loaded; local choice patches installed. Preferences: {PreferencePath}");
+        GD.Print($"[{Id}] 0.1.3 loaded; local choice patches installed. Preferences: {PreferencePath}");
     }
 
     private static void Patch(Harmony harmony, Type type, string target, string patch, bool prefix)
