@@ -1,4 +1,4 @@
-RANDOM CHARACTER OPTIONS 0.1.3 - PREVIEW
+RANDOM CHARACTER OPTIONS 0.1.4 - PREVIEW
 For Slay the Spire 2 v0.111.0 on Windows
 
 START HERE: Open INSTALL.md for the short, step-by-step installation guide.
@@ -27,11 +27,13 @@ Under Include in Random, all characters start ON. Turn unwanted characters OFF.
 Choices save automatically on this PC. Individual toggles show a brief character
 animation on the left: death when OFF, power when ON. Another toggle immediately
 replaces it. Include all does not start animations.
-Click Random: it immediately reveals an allowed character and synchronizes the
-ordinary character choice to your lobby. You can click Random again to reroll.
-Unlike vanilla Random, it does not wait until embark and is not seed-deterministic.
+Reveal Immediately: each Random activation reveals a fresh allowed character.
+Reveal At lock-in: Random keeps the mystery screen until you press Embark / Ready,
+then rolls from your currently included, unlocked characters. The result is visible
+to you and the lobby once you lock in. Unready keeps that pick; press Random again
+for a new mystery pick. Both custom modes use fresh rolls, independent of the seed.
 Manual selection can still choose an excluded character. If all are excluded,
-Random does nothing and asks you to allow at least one unlocked character.
+the immediate roll or mystery lock-in is blocked with an explanation.
 Include all restores every character. Custom Random OFF restores native Random,
 which resolves at embark. The i bubble provides help on hover or click. Preferences:
 

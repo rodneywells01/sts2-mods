@@ -2,17 +2,17 @@
 
 Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Random Character Options**, a multiplayer-compatible character-selection helper.
 
-**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.3/RandomCharacterBlacklist-0.1.3.zip)**
+**[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip)**
 
 **Players: [Start here — simple installation guide](INSTALL.md).**
 
 **Coding agents: [Installation and development instructions](AGENTS.md).**
 
-## Current state — September 5, 2026
+## Current state — September 6, 2026
 
-Playable Windows preview built for **v0.111.0**, commit `41cef1ea`. Core and installer checks pass. Two local game processes tested both-installed, host-only, and client-only configurations with consistent lobby choices and run initialization. These instrumented local tests do not replace a real Steam friend session or full-run/combat playthrough.
+The public installer above is **0.1.2**. This branch prepares **0.1.4** for **v0.111.0**, commit `41cef1ea`, with selectable reveal timing. Rodney reports that the prior version worked in a real Steam multiplayer match with an unmodded friend; that is player-reported validation of the prior version, not the new lock-in mode or a confirmed complete run.
 
-Extract `dist/RandomCharacterBlacklist-0.1.3.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
+For the local 0.1.4 review build, extract `dist/RandomCharacterBlacklist-0.1.4.zip`, close STS2, and run `Install.cmd`. Enable the mod in Settings → Mod Settings. Players need no SDK, BaseLib, or separate mod manager. See [validation](packaging/VALIDATION.md) and [implementation notes](docs/implementation.md). The [initial discovery](docs/modding-discovery.md) is historical context.
 
 ## First mod behavior
 
@@ -20,12 +20,13 @@ On standard character select, click the **dice icon** or press **F8**. Built by 
 
 - **Include in Random:** all characters start on; turn off unwanted characters.
 - **Custom Random:** turn off to restore the game's normal seeded Random behavior.
-- Each click/activation of Random rolls again and immediately reveals the result. The same character can legitimately appear twice; the result pulses and the normal selection sound/screen shake play on every roll, including repeats.
+- **Reveal immediately** (default): each Random activation rolls and shows the result, with one normal selection sound/screen shake even on repeats.
+- **Reveal at lock-in**: Random keeps the game's mystery screen until you press **Embark / Ready**, then rolls from the currently included, visible, unlocked characters. You and the lobby can see the result once you lock in. This is a fresh local roll; Custom Random off remains the exact vanilla seed-based option.
 - **Include all** resets roster choices. Icons and name colors come from the game.
 - Individual character toggles play a brief native preview immediately left of the options dropdown: death when excluded, power when included. A new toggle immediately replaces the previous preview; Include all produces no animation.
 - An **i** button provides hover help, a clickable explanation, and the credit “Built by Rodney Wells (WatersEdge) with GPT-6 Astra.” The dice header never takes mouse or arrow-key focus.
-- Choices and enabled state persist. Manual picks remain unrestricted.
-- No eligible characters: Random does nothing and explains the problem.
+- Choices, enabled state, and reveal mode persist. Existing settings retain immediate reveal. Manual picks remain unrestricted.
+- No eligible characters: immediate Random or mystery lock-in is blocked with an explanation.
 - Normal lobby synchronization carries the ordinary selected character to peers.
 
 The stable mod/package ID remains `RandomCharacterBlacklist` to preserve early-preview settings and avoid duplicates. Its saved exclusion set is the complement of the allow-by-default UI; newly available characters start included.
@@ -34,4 +35,4 @@ The stable mod/package ID remains `RandomCharacterBlacklist` to preserve early-p
 
 Run `scripts/Build.ps1` (optionally with `-GamePath`) and `tests/Installer.Tests.ps1`. Build.ps1 uses .NET 9 or newer, builds Release, runs core checks, and creates the ZIP. Game assemblies, personal configuration, and the integration probe are excluded.
 
-Steam Workshop is the existing automatic-update route; this package uses its native mod payload. No Workshop item has been published yet. The included installer supports sharing this preview directly with a friend. The next playtest is a real Steam multiplayer session.
+Steam Workshop is the existing automatic-update route; this package uses its native mod payload. No Workshop item has been published yet. The included installer supports sharing this preview directly with a friend. The next player check is the new lock-in mode in a Steam multiplayer session.

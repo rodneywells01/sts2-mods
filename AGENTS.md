@@ -13,7 +13,7 @@ Current mod: **Random Character Options**, credited **Built by Rodney Wells (Wat
 - Use the packaged installer, for example from the repository root in PowerShell:
 
   ```powershell
-  & './dist/RandomCharacterBlacklist-0.1.3/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
+  & './dist/RandomCharacterBlacklist-0.1.4/Install.ps1' -GamePath 'D:\SteamLibrary\steamapps\common\Slay the Spire 2' -NoPause
   ```
 
   Substitute the actual built package version and verified game folder. `-Uninstall` removes only owned mod files; preferences remain.
@@ -48,13 +48,14 @@ Source map:
 ## Behavior to preserve
 
 - All characters default to included; manual selection remains unrestricted. Filter custom Random to visible, unlocked, included characters. An empty pool must not select a forbidden character.
-- Every Random activation rerolls, even with unchanged focus. The selected character may legitimately repeat; each roll must emit exactly one native character sound and screen shake, including repeats. Use the button's activation/Released event, not focus entry, to trigger rolls.
+- In immediate mode, every Random activation rerolls, even with unchanged focus. The selected character may legitimately repeat; each roll must emit exactly one native character sound and screen shake, including repeats. Use the button's activation/Released event, not focus entry, to trigger immediate rolls.
+- In lock-in mode, preserve the native Random placeholder until local Embark/Ready. Resolve using the current eligible pool before the native handler sends Ready; block that handler on empty/corrupt settings. Do not reveal early or reroll a concrete/manual selection. Unready retains the concrete pick. Both modes use fresh local rolls; Custom Random off remains exact vanilla seeded behavior.
 - Custom Random off restores native selection. Never filter the game's seeded run-start Random resolution independently on each peer: that can desynchronize multiplayer.
 - Custom picks use the normal character button and native lobby synchronization. Do not change networking, run generation, or combat for this UI feature. Reassess `affects_gameplay` if scope expands.
 - The dice header is clickable and F8 opens the menu, but it has no mouse/arrow-key focus. Preserve native character-row navigation. Closing restores prior valid focus. Keep the dropdown inside screen bounds.
 - Individual toggles save immediately, then play death/power visuals directly left of the dropdown. Each new toggle immediately hides/replaces the previous visual. Include all starts no animation. Cosmetic failure must not block settings.
 - Respect per-character PowerUp mappings, including Necrobinder `cast_mighty` and Defect `process`. Use installed resources. Hide/cancel previews on panel or scene closure and unsubscribe frame callbacks on exit.
-- Preserve atomic preference saves and corrupt-file protection. Keep preferences outside the game's recursive mod-manifest scan.
+- Preserve atomic preference saves and corrupt-file protection. Keep preferences outside the game's recursive mod-manifest scan. Legacy settings default to immediate reveal; Include all preserves enabled/reveal mode. Keep the mod's scalable font private and dice raster at 4× logical size.
 
 ## Verification
 
@@ -62,7 +63,7 @@ Run checks appropriate to the change. Build/core checks cover logic; installer t
 
 For game-dependent changes, follow the isolated-copy setup in `docs/implementation.md`. Use separate APPDATA roots, per-copy `override.cfg`, synthetic profiles, and `--force-steam off`. Verify the log's user-data path before proceeding. Never reuse real saves for probes.
 
-After building GameProbe and preparing both copies, `scripts/Test-Integration.ps1` runs both-installed, host-only, and client-only cases through run initialization. Animation/UI checks are documented in `docs/animation-feasibility.md` and implemented by probe roles. Include lobby re-entry/visibility refresh, repeated Random clicks, rapid character toggles, F8/Escape, and panel placement when relevant. Use native computer-use tools for visible-game QA.
+After building GameProbe and preparing both copies, `scripts/Test-Integration.ps1 -Mode immediate` or `-Mode lock-in` runs both-installed, host-only, and client-only cases through run initialization. Add `-NativePeerRandom -Cases host-only,client-only` in lock-in mode to verify an unmodded teammate's native Random. `scripts/Test-Ui.ps1 -Role layout`, `singleplayer`, or `animation` runs isolated rendering, singleplayer lock-in, or preview checks. Include lobby re-entry/visibility refresh, repeated Random clicks, rapid character toggles, F8/Escape, and panel placement when relevant. Use native computer-use tools for visible-game QA.
 
 Local instrumented ENet tests are not proof of an uninstrumented Steam friend session or full combat run. Preserve that distinction in release notes. Avoid repeatedly rerunning unchanged tests once relevant checks pass.
 
@@ -75,7 +76,7 @@ For on-demand packaging or publishing, use [.agents/skills/publish-sts2-package/
 - Check package contents: only this mod's DLL/manifest belong in its payload directory. Never ship GameProbe, game DLLs, or runtime tooling.
 - When changing versions, update manifest/project version, initializer/installer/package display strings, release notes, and versioned test paths together.
 - Use `codex/` for new development branches. Commit focused changes; preserve unrelated work. Verify the configured Git remote before pushing.
-- The GitHub repository and v0.1.3 installer release are public. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
+- The GitHub repository is public. On September 6, GitHub listed v0.1.2 as the latest published installer; the v0.1.3 work was still in PR #2. Inspect actual remote state before publishing; do not infer authorization to change visibility or publish Workshop from a request to edit or push code.
 - See `docs/distribution.md` for the official Workshop uploader route. Prepare listing content before seeking any needed publication approval. Avoid duplicate manual/Workshop installations and retain the generated Workshop item ID for updates.
 
 Local AI Project continuity, when available: reuse existing ignored `project-registration.json` and the `register-ai-project` skill. Do not commit local dashboard/task records or create duplicate project identities.

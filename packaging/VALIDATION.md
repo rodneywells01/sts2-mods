@@ -1,31 +1,46 @@
-# Validation — September 5, 2026
+# Validation — September 6, 2026
 
-Preview 0.1.3 targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. It has no BaseLib dependency and needs no PCK: icons and name colors come from the installed game.
+Preview **0.1.4**, prepared locally for review, targets Slay the Spire 2 **v0.111.0**, commit `41cef1ea`, Windows x64. No BaseLib or PCK is required. This document distinguishes automated local tests from player reports.
 
-## Completed
+## Completed for this change
 
-For 0.1.3, release compilation, core checks, and installer tests were rerun, and the revised dice UI was displayed in the isolated synthetic game. The broader gameplay/animation/multiplayer results below were established for 0.1.2 and were not rerun for this UI-only change.
+- Release build against the installed game assemblies: zero warnings/errors.
+- **1,019 core checks**: eligibility, locks, empty pools, reachable choices, atomic saves, enabled/reveal persistence, legacy migration, and invalid settings preserved for recovery.
+- Native loading and panel creation with all four Harmony patches.
+- Immediate mode: twenty rolls with one eligible character, exactly one character sound and screen shake per roll including repeats, manual excluded picks, disabled native Random, and re-enabling with a pending Random.
+- Lock-in mode: twenty Random activations retain the native mystery placeholder. Empty-pool Embark leaves the player unready; restoring an eligible character recovers. Switching a pending mystery to immediate reveals a legal pick. Manual picks remain unrestricted. Singleplayer lock-in preserves the included choice through run initialization. Keeping options open from Random focus cannot undo the resolved choice; failed lock-in also restores an Embark button disabled by the tutorial callback.
+- Local ENet multiplayer with **both installed, host only, and client only** in both reveal modes. All completed with consistent character choices through run initialization.
+- Additional **host-only and client-only** cases with the unmodded teammate choosing native Random: both peers produced identical final player/character rosters, while the modded player retained the allowed character. Character selection and Ready use the existing Reliable transport; no networking/run-generation patches were added.
+- Visible native desktop test at **1280×720**: F8 opens the expanded panel, Escape closes it, Random retains its mystery screen, Ready reveals the included character, and Unready retains that concrete pick.
+- Rendered layout checks at **1280×720, 1920×1080, 2560×1440, and 3840×2160**: panel stays within screen bounds after resizing. Dice texture is 232×160 for a 58×40 logical icon; the private panel font uses MSDF. Keyboard Enter selects a reveal mode without readying the player. Include all preserves reveal mode. Three native visibility refreshes retain Random in the synthetic test roster.
+- All five death/power animation mappings, thirty rapid replacements, eventual hiding, no Include all animation, and unchanged lobby selection passed again.
 
-- Release compilation against the installed `sts2.dll`, `GodotSharp.dll`, and `0Harmony.dll`: zero errors/warnings.
-- Core checks: 1,014 assertions covering eligibility, locked characters, empty pools, reachable choices, enabled-mode defaults/persistence, persisted exclusions, overwriting settings, and rejecting corrupt/unsupported settings without destroying them.
-- Native game loading: manifest detected, initializer invoked, all three Harmony patches installed.
-- In-game panel tests: roster populated; all-excluded blocks selection; twenty successive activation events with one allowed character always choose it; manual selection still works; disabling restores the vanilla Random placeholder and re-enabling resolves it through the whitelist.
-- Visible game at 1280×720: three consecutive mouse clicks on Random produced Silent, Necrobinder, then Defect without moving focus away. Verified whitelist defaults, icons/colors, keyboard confirmation, help dialog, and native Random with Custom Random off.
-- Animation probe: all five native death/power mappings, thirty immediate replacements, eventual hiding, no Include all animation, and unchanged lobby selection. Visible mouse tests confirmed the native character scenes render on the selection screen.
-- Repeat-roll feedback: twenty controlled rolls (one changed selection plus nineteen repeats) each invoke exactly one native character sound and one screen shake.
-- Local ENet multiplayer, two separate game processes: both peers with this mod, host only, and client only. Each combination connected, agreed on selected characters, and retained them during run initialization.
-- Installer under Windows PowerShell 5.1: installation, repeat installation/update, uninstall preserving unrelated files, checksum rejection, version rejection, and paths with spaces. Steam VDF parsing tested with an escaped secondary-library path.
+- Windows PowerShell 5.1 installer fixtures passed install/update, owned-file removal preserving unrelated files, tamper rejection, game-version rejection, Steam path parsing, and paths with spaces. ZIP entry/hash/version verification passed for the final local package.
 
-Multiplayer tests used a separate instrumenting `GameProbe` mod on both peers and isolated synthetic profiles. The probe observes state, drives selection/readiness, and unlocks only the synthetic test roster. **GameProbe is not included in this release.** A peer without Random Character Options in these tests still had the probe; these are not a claim of an uninstrumented Steam playthrough.
+## Reproduce
 
-## Remaining playtest coverage
+Build the mod with `scripts/Build.ps1` and build `tests/GameProbe` using the local .NET SDK. Prepare isolated host/client copies as described in `docs/implementation.md`, then run:
 
-- A real Steam friend invite/session and a complete multiplayer run, including combat.
-- Physical controller hardware, Steam Deck/Linux/macOS, custom character mods, and other UI mods.
-- Future game versions. The installer refuses versions other than the tested build.
+```powershell
+./tests/Installer.Tests.ps1
+./scripts/Test-Integration.ps1 -Mode immediate
+./scripts/Test-Integration.ps1 -Mode lock-in
+./scripts/Test-Integration.ps1 -Mode lock-in -Cases host-only,client-only -NativePeerRandom
+./scripts/Test-Ui.ps1 -Role singleplayer
+./scripts/Test-Ui.ps1 -Role layout
+./scripts/Test-Ui.ps1 -Role animation
+```
 
-## Behavioral choice
+All game probes use synthetic saves, isolated APPDATA, and `--force-steam off`. The probe checks its resolved user-data path before touching synthetic progress. GameProbe remains on both peers even in mixed-mod tests and is **never included in the package**. Sanitized check results are in `docs/test-results/reveal-0.1.4.json`.
 
-Vanilla Random resolves on every peer at run start using the same seeded RNG. This mod instead chooses a legal character when Random is pressed and invokes the existing character button. Native `SetLocalCharacter` broadcasts that ordinary choice. No run-generation, networking, or combat methods are patched. Therefore the manifest declares `affects_gameplay: false`; local mixed-install tests support this design. The choice is revealed immediately and is not seed-deterministic.
+## Player report and remaining coverage
 
-The Godot headless runs emitted a certificate-store warning and some engine preload/exit warnings. No blacklist exception or multiplayer mismatch was observed in the passing runs. These tests do not establish that the entire game log is warning-free.
+On September 6, Rodney reported that the prior mod worked for him during a real Steam multiplayer match with an unmodded friend. This supports the previous behavior in that session; it does not establish the new lock-in mode, a completed full run, or all combinations of mods.
+
+The new mode still needs a Steam friend-session playtest. Physical controllers, Steam Deck/Linux/macOS, custom characters, other UI mods, a complete combat run, and future game versions remain unverified. The installer retains its game-version guard.
+
+## Behavioral boundary
+
+**Immediately** rolls on Random activation. **At lock-in** rolls at the local player's Embark/Ready press, and the result can then be seen by the player and lobby while waiting for teammates. Both modes use a fresh local roll and send an ordinary character choice before readiness. They do not reproduce native seed determinism. **Custom Random off** leaves the game's exact seeded Random resolver intact and suspends the inclusion filter.
+
+No run-generation, networking, or combat methods are patched; `affects_gameplay` remains false. Headless runs can emit the previously observed certificate-store and engine preload/exit warnings; passing probes are not a claim that every game log is warning-free.
