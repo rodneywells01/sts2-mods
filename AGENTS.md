@@ -68,6 +68,8 @@ Local instrumented ENet tests are not proof of an uninstrumented Steam friend se
 
 ## Releases and repository hygiene
 
+For on-demand packaging or publishing, use [.agents/skills/publish-sts2-package/SKILL.md](.agents/skills/publish-sts2-package/SKILL.md). Rodney explicitly chose manual releases: do not add CI release workflows, runners, startup tasks, or automatic publishing.
+
 - `INSTALL.md` is the canonical simple installation guide; Build.ps1 copies it into the ZIP. Keep README links, package README, and release notes consistent.
 - Keep `.tools`, `.research`, game copies, decompiled code, saves, credentials, and local `project-*.json` records out of Git. Keep DLL artifacts in releases, not source history.
 - Check package contents: only this mod's DLL/manifest belong in its payload directory. Never ship GameProbe, game DLLs, or runtime tooling.
