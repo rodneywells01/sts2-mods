@@ -17,6 +17,7 @@ foreach ($name in @('RandomCharacterBlacklist.dll', 'RandomCharacterBlacklist.js
     Copy-Item -LiteralPath (Join-Path $root "src\RandomCharacterBlacklist\bin\Release\net9.0\$name") -Destination $payload -Force
 }
 Copy-Item (Join-Path $root 'packaging\*') -Destination $package -Force
+Copy-Item -LiteralPath (Join-Path $root 'INSTALL.md') -Destination $package -Force
 $hashes = [ordered]@{}
 Get-ChildItem -LiteralPath $payload -File | ForEach-Object { $hashes[$_.Name] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
 $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'checksums.json')

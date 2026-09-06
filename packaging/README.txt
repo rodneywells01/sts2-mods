@@ -1,6 +1,8 @@
 RANDOM CHARACTER OPTIONS 0.1.1 - PREVIEW
 For Slay the Spire 2 v0.111.0 on Windows
 
+START HERE: Open INSTALL.md for the short, step-by-step installation guide.
+
 INSTALL
 1. Close Slay the Spire 2.
 2. Extract this entire ZIP to a folder. Do not run it inside the ZIP viewer.

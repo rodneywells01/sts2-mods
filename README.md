@@ -2,6 +2,10 @@
 
 Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Random Character Options**, a multiplayer-compatible character-selection helper.
 
+**Players: [Start here — simple installation guide](INSTALL.md).**
+
+**Coding agents: [Installation and development instructions](AGENTS.md).**
+
 ## Current state — September 5, 2026
 
 Playable Windows preview built for **v0.111.0**, commit `41cef1ea`. Core and installer checks pass. Two local game processes tested both-installed, host-only, and client-only configurations with consistent lobby choices and run initialization. These instrumented local tests do not replace a real Steam friend session or full-run/combat playthrough.
