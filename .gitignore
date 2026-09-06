@@ -1,0 +1,13 @@
+bin/
+obj/
+.tools/
+.research/
+dist/
+*.user
+*.local.json
+*.local.props
+
+# Local AI project registration and publishing receipts
+/project-*.json
+/publish-*.json
+

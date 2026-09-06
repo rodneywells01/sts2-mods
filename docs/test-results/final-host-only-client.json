@@ -1,0 +1,12 @@
+{
+  "role": "client",
+  "checks": [
+    "Modded=False",
+    "Local choice CHARACTER.SILENT",
+    "PASS Two peers connected",
+    "PASS Both peers agree on Ironclad and Silent",
+    "Ready to start",
+    "PASS Run initialization retains agreed characters",
+    "COMPLETE"
+  ]
+}

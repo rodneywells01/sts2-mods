@@ -1,0 +1,9 @@
+{
+  "role": "ui",
+  "checks": [
+    "PASS UI Random survives native visibility refresh 0",
+    "PASS UI Random survives native visibility refresh 1",
+    "PASS UI Random survives native visibility refresh 2",
+    "UI_READY"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "role": "client",
+  "checks": [
+    "Modded=True",
+    "PASS Panel lists roster",
+    "PASS All excluded preserves lobby choice",
+    "PASS Twenty random picks honor single eligible character",
+    "PASS Disabled mode restores vanilla Random placeholder",
+    "PASS Disabled activation does not roll custom choice",
+    "PASS Enabling resolves pending vanilla Random through whitelist",
+    "PASS Manual selection ignores blacklist",
+    "Local choice CHARACTER.SILENT",
+    "PASS Two peers connected",
+    "PASS Both peers agree on Ironclad and Silent",
+    "Ready to start",
+    "PASS Run initialization retains agreed characters",
+    "COMPLETE"
+  ]
+}
