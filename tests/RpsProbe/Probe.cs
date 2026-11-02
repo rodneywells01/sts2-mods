@@ -11,6 +11,10 @@ using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Map;
+using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Saves.Runs;
 using RelicRpsStats;
 using Mod = RelicRpsStats.Mod;
 using Environment = System.Environment;
@@ -24,6 +28,10 @@ public static class Probe
     private static readonly bool expectedModded = (Environment.GetEnvironmentVariable("RPS_PROBE_EXPECT_MODDED")
         ?? throw new Exception("Expected mod state required")) == "1";
     private static bool started;
+    private static readonly string reloadStage = Environment.GetEnvironmentVariable("RPS_PROBE_RELOAD") ?? "none";
+    private static SerializableRun? beforeTreasure;
+    private static bool loadReadyStarted;
+    private static readonly List<string> capturedKeys = new();
     private static StatsBook Book => (StatsBook)AccessTools.Field(typeof(Mod), "Book").GetValue(null)!;
     private static Task Pending => (Task)AccessTools.Field(typeof(Mod), "PendingSave").GetValue(null)!;
     public static void Initialize()
@@ -40,6 +48,11 @@ public static class Probe
         {
             h.Patch(AccessTools.Method(typeof(NCharacterSelectScreen), "AfterInitialized"), postfix: new HarmonyMethod(typeof(Probe), nameof(LobbyReady)));
             h.Patch(AccessTools.Method(typeof(RunManager), "Launch"), postfix: new HarmonyMethod(typeof(Probe), nameof(RunReady)));
+            if (reloadStage == "record")
+                h.Patch(AccessTools.Method(typeof(TreasureRoom), "EnterInternal"), prefix: new HarmonyMethod(typeof(Probe), nameof(CaptureSave)));
+            if (reloadStage == "resume")
+                h.Patch(typeof(LoadRunLobby).GetConstructors().Single(c => c.GetParameters()[2].ParameterType == typeof(SerializableRun)),
+                    postfix: new HarmonyMethod(typeof(Probe), nameof(LoadLobbyReady)));
         }
         Record("Isolated data: " + OS.GetUserDataDir());
     }
@@ -68,17 +81,67 @@ public static class Probe
         catch (Exception e) { Record("FAIL " + e); }
     }
     private static void RunReady() => _ = Treasure();
+    private static void CaptureSave()
+    {
+        if (role == "host") beforeTreasure = SaveManager.Instance
+            .LoadAndCanonicalizeMultiplayerRunSave(RunManager.Instance.NetService.NetId).SaveData;
+    }
+    private static void LoadLobbyReady(LoadRunLobby __instance)
+    {
+        if (loadReadyStarted) return;
+        loadReadyStarted = true;
+        _ = ReadyLoaded(__instance);
+    }
+    private static async Task ReadyLoaded(LoadRunLobby lobby)
+    {
+        try
+        {
+            await Wait(2);
+            for (int i = 0; i < 40 && lobby.Players.Count < 2; i++) await Wait(0.5);
+            Check(lobby.Players.Count == 2, "Two peers connected through native saved-run lobby");
+            lobby.SetReady(true);
+        }
+        catch (Exception e) { Record("FAIL " + e); }
+    }
     private static async Task Treasure()
     {
         try
         {
             await Wait(6);
-            await RunManager.Instance.EnterRoomDebug(RoomType.Treasure, showTransition: false);
+            if (reloadStage == "record")
+            {
+                if (role == "client")
+                {
+                    var start = AccessTools.Field(typeof(RunManager), "_startTime");
+                    start.SetValue(RunManager.Instance, (long)start.GetValue(RunManager.Instance)! + 137);
+                }
+                var point = RunManager.Instance.DebugOnlyGetState()!.Map.GetAllMapPoints().First(p => p.PointType == MapPointType.Treasure);
+                await RunManager.Instance.EnterMapCoord(point.coord);
+            }
+            else if (reloadStage == "none")
+                await RunManager.Instance.EnterRoomDebug(RoomType.Treasure, showTransition: false);
+            else
+                Check(Book.Events.Count == 1, "Saved stats history loaded across process restart");
             await Wait(2);
             var room = Nodes(NGame.Instance!).OfType<NTreasureRoom>().Single();
             var sync = RunManager.Instance.TreasureRoomRelicSynchronizer;
+            if (reloadStage != "none")
+            {
+                var state = RunManager.Instance.DebugOnlyGetState()!;
+                Record($"Reload identity: stage={reloadStage}; start={AccessTools.Field(typeof(RunManager), "_startTime").GetValue(RunManager.Instance)}; floor={state.TotalFloor}; coord={state.CurrentMapCoord}; rooms={state.CurrentRoomCount}");
+            }
             List<RelicPickingResult>? results = null;
-            sync.RelicsAwarded += r => results = r;
+            sync.RelicsAwarded += r =>
+            {
+                results = r;
+                if (reloadStage == "none") return;
+                // The native event occurs after GenerateRelicFight and before EndAward commits
+                // the observer's capture. Inspect it here to prove the replay was observed,
+                // rather than passing merely because old history remained on disk.
+                var capture = AccessTools.Field(typeof(Mod), "capture").GetValue(null);
+                if (capture?.GetType().GetProperty("Contests")?.GetValue(capture) is IEnumerable<Contest> contests)
+                    capturedKeys.AddRange(contests.Select(c => c.Key));
+            };
             _ = (Task)AccessTools.Method(typeof(NTreasureRoom), "OpenChest").Invoke(room, null)!;
             for (int i = 0; i < 40 && sync.CurrentRelics == null; i++) await Wait(0.2);
             Check(sync.CurrentRelics?.Count >= 2, "Native multiplayer relic choices");
@@ -95,6 +158,8 @@ public static class Probe
             sync.PickRelicLocally(0);
             for (int i = 0; i < 100 && results == null; i++) await Wait(0.2);
             Check(results != null, "Native synchronized award event");
+            if (reloadStage != "none")
+                Check(capturedKeys.Count == 1, "Native observer captured the actual contest before persistence");
             if (installed) Check(!Nodes(room).OfType<AcceptDialog>().Any(d => d.Visible), "Active stats viewer closes before precomputed result is recorded");
             var fight = results!.Single(r => r.type == RelicPickingResultType.FoughtOver);
             Record("Winner=" + fight.player!.NetId + ";rounds=" + JsonSerializer.Serialize(fight.fight!.rounds.Select(r => r.moves)));
@@ -109,6 +174,18 @@ public static class Probe
                 Check(!Book.Add(c), "Duplicate delivery ignored");
                 var store = new StatsStore(Path.Combine(OS.GetUserDataDir(), Mod.Id, "stats.json"));
                 Check(store.Load().Events.Count == 1, "Persisted record reloads");
+                string baselinePath = Path.Combine(OS.GetUserDataDir(), Mod.Id, "probe-reload-key.txt");
+                if (reloadStage == "record")
+                {
+                    if (role == "host") Check(beforeTreasure != null, "Captured native host save before treasure RNG draws");
+                    // Preserve the native pre-entry autosave; never synthesize an in-room save,
+                    // because the game appends that room's history entry again while loading it.
+                    File.WriteAllText(baselinePath, c.Key);
+                    Record("Native pre-contest autosave retained for restart");
+                }
+                else if (reloadStage == "resume")
+                    Check(File.ReadAllText(baselinePath) == c.Key && capturedKeys.Single() == c.Key,
+                        "Native reloaded contest retains original key and is not counted twice");
                 var summary = Nodes(room).OfType<Control>().Single(n => n.Name == "RelicRpsSummary");
                 Check(summary.IsVisibleInTree(), "Updated stats remain visible after native award screen closes");
                 // Keep the actual selection interface visible for review after the native animation.

@@ -37,4 +37,6 @@ Use .NET 9 and installed game assemblies. `scripts/Build-Rps.ps1 -GamePath <path
 
 Local instrumented ENet tests do not establish an uninstrumented Steam friend session, physical-controller support, other mods, future game versions, or a full combat run. See the PR's Validation for the tested revision, observed results and visual evidence.
 
+For saved-lobby deduplication, run `scripts/Test-Rps.ps1 -Case both -ReloadStage record` followed by `-ReloadStage resume`. The record stage uses native map entry/autosave and offsets the synthetic client's run timestamp by 137 seconds. The resume stage preserves stats, starts new processes through native `-fastmp load`/join, replays the treasure, and checks that the observer rejects the same key rather than adding another result. This uses only isolated synthetic profiles; it does not exercise an uninstrumented Steam session.
+
 Built by Rodney Wells (WatersEdge) with Codex.

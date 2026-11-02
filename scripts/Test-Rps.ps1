@@ -1,5 +1,6 @@
 param(
     [ValidateSet('both','host-only','client-only','compendium')][string]$Case = 'both',
+    [ValidateSet('none','record','resume')][string]$ReloadStage = 'none',
     [switch]$Visible,
     [switch]$KeepOpen
 )
@@ -11,6 +12,8 @@ $processes = @()
 $manifests = @()
 $createdManifests = @()
 $passed = $false
+if ($ReloadStage -ne 'none' -and $Case -ne 'both') { throw 'Reload validation requires both observers.' }
+$resultCase = if ($ReloadStage -eq 'none') { $Case } else { "$Case-reload-$ReloadStage" }
 try {
     foreach ($role in $roles) {
         $stage = Join-Path $research "game-$role"
@@ -46,7 +49,7 @@ try {
         $settings.mod_settings.mod_list = @(@{id='RpsProbe';is_enabled=$true;source='mods_directory'}, @{id='RelicRpsStats';is_enabled=$true;source='mods_directory'})
         $settings | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $settingsPath
         $saved = Join-Path $research "appdata/STS2ModTests/$role/RelicRpsStats"
-        if (Test-Path -LiteralPath $saved) {
+        if ($ReloadStage -ne 'resume' -and (Test-Path -LiteralPath $saved)) {
             # Archive rather than delete prior test observations.
             $archive = Join-Path $research ("rps-archive-" + $role + '-' + [Guid]::NewGuid().ToString('N'))
             $resolvedResearch = [IO.Path]::GetFullPath($research) + [IO.Path]::DirectorySeparatorChar
@@ -58,19 +61,29 @@ try {
         $env:APPDATA = Join-Path $research 'appdata'
         $env:RPS_PROBE_ROLE = if ($Case -eq 'compendium') { 'compendium' } else { $role }
         $env:RPS_PROBE_EXPECT_MODDED = if ($modded) { '1' } else { '0' }
-        $result = Join-Path $research "rps-$Case-$role.json"
+        $env:RPS_PROBE_RELOAD = $ReloadStage
+        $result = Join-Path $research "rps-$resultCase-$role.json"
         if (Test-Path -LiteralPath $result) { Move-Item -LiteralPath $result -Destination ($result + '.' + [Guid]::NewGuid().ToString('N') + '.old') }
         $env:RPS_PROBE_OUTPUT = $result
-        $arguments = "--force-steam off --log-file rps-$Case-$role.log "
+        $logName = "rps-$resultCase-$role.log"
+        $logPath = Join-Path $stage $logName
+        if (Test-Path -LiteralPath $logPath) {
+            Move-Item -LiteralPath $logPath -Destination ($logPath + '.' + [Guid]::NewGuid().ToString('N') + '.old')
+        }
+        $arguments = "--force-steam off --log-file $logName "
         if ($Visible -and $role -eq 'host') { $arguments += '--windowed --resolution 1280x720 ' } else { $arguments += '--headless ' }
-        if ($Case -ne 'compendium') { if ($role -eq 'host') { $arguments += '-fastmp host_standard' } else { $arguments += '-fastmp join -clientId 1000' } }
+        if ($Case -ne 'compendium') {
+            if ($role -eq 'host') {
+                $arguments += if ($ReloadStage -eq 'resume') { '-fastmp load' } else { '-fastmp host_standard' }
+            } else { $arguments += '-fastmp join -clientId 1000' }
+        }
         $processes += Start-Process -FilePath (Join-Path $stage 'SlayTheSpire2.exe') -WorkingDirectory $stage -ArgumentList $arguments -WindowStyle Hidden -PassThru
     }
     for ($attempt = 0; $attempt -lt 90; $attempt++) {
         Start-Sleep -Seconds 1
         $complete = 0
         foreach ($role in $roles) {
-            $result = Join-Path $research "rps-$Case-$role.json"
+            $result = Join-Path $research "rps-$resultCase-$role.json"
             if (Test-Path -LiteralPath $result) {
                 $content = Get-Content -Raw -LiteralPath $result
                 if ($content -match 'FAIL ') { throw $content }
@@ -80,7 +93,7 @@ try {
         if ($complete -eq $roles.Count) { $passed = $true; break }
     }
     if (-not $passed) { throw "Timed out: $Case; inspect isolated logs." }
-    Write-Host "PASS RPS $Case"
+    Write-Host "PASS RPS $resultCase"
 }
 finally {
     if (-not ($KeepOpen -and $passed)) {
