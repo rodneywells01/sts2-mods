@@ -52,18 +52,21 @@ internal sealed class StatsPanel
     {
         using var icon = new Image();
         icon.LoadSvgFromString("""
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-            <g fill="#e5c77e">
-            <rect x="4" y="18" width="6" height="10" rx="1.5"/>
-            <rect x="13" y="10" width="6" height="18" rx="1.5"/>
-            <rect x="22" y="4" width="6" height="24" rx="1.5"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+            <g stroke="#e5c77e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path fill="#e5c77e" d="M3 8 8 3 15 4 19 10 16 17 7 17 3 13Z"/>
+            <path fill="none" d="M23 3H31L36 8V20H23Z M31 3V8H36 M26 12H32 M26 16H32"/>
+            <g fill="none"><circle cx="14" cy="33" r="3.5"/><circle cx="25" cy="33" r="3.5"/>
+            <path d="M16.5 30.5 28 22 M22.5 30.5 11 22"/></g>
             </g></svg>
             """, 4);
         var button = new Button { Name = "RelicRpsStatsButton", Icon = ImageTexture.CreateFromImage(icon),
-            ExpandIcon = true, TooltipText = "Rock Paper Scissors stats",
+            ExpandIcon = true, IconAlignment = HorizontalAlignment.Center,
+            VerticalIconAlignment = VerticalAlignment.Center, TooltipText = "Rock Paper Scissors stats",
             CustomMinimumSize = new Vector2(56, 56), FocusMode = Control.FocusModeEnum.All };
         parent.AddChild(button);
         button.AddThemeConstantOverride("icon_max_width", 32);
+        button.AddThemeConstantOverride("h_separation", 0);
         button.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
         button.OffsetLeft = -101; button.OffsetRight = -45; button.OffsetTop = 115; button.OffsetBottom = 171;
         button.Pressed += () => Mod.ShowStats(parent);

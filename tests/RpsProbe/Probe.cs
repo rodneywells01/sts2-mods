@@ -139,6 +139,8 @@ public static class Probe
             Check(button.Text.Length == 0 && button.Icon != null && button.Size.X <= 64 && button.Size.Y <= 64,
                 "Compendium stats entry is a compact icon button");
             Check(button.TooltipText == "Rock Paper Scissors stats", "Icon retains descriptive hover help");
+            Check(button.IconAlignment == HorizontalAlignment.Center && button.VerticalIconAlignment == VerticalAlignment.Center,
+                "Compendium icon is centered on both axes");
             if (DisplayServer.GetName() != "headless") NGame.Instance!.GetViewport().GetTexture().GetImage().SavePng(output + ".button.png");
             var stopwatch = Stopwatch.StartNew(); button.EmitSignal(BaseButton.SignalName.Pressed);
             await Wait(0.1);
