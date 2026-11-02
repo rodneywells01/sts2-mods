@@ -46,10 +46,14 @@ internal sealed class StatsDialog
         note.AddThemeFontSizeOverride("font_size", 17); stack.AddChild(note);
         if (error != null) stack.AddChild(new Label { Text = error, AutowrapMode = TextServer.AutowrapMode.WordSmart });
         search = new LineEdit { PlaceholderText = "Search all teammates…", MaxLength = 100 }; stack.AddChild(search);
+        // The plain Control prevents transient wrapped-label minimums from expanding the dialog.
+        var scrollBounds = new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 100) };
+        stack.AddChild(scrollBounds);
         var scroll = new ScrollContainer { Name = "TeammateScroll", SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             CustomMinimumSize = new Vector2(0, 100), VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        stack.AddChild(scroll);
+        scrollBounds.AddChild(scroll);
+        scroll.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         rows = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; scroll.AddChild(rows);
         var footer = new HBoxContainer(); stack.AddChild(footer);
         previous = new Button { Text = "Previous" }; next = new Button { Text = "Next" };
@@ -60,12 +64,29 @@ internal sealed class StatsDialog
         profiles.ItemSelected += _ => Filter(); search.TextChanged += _ => Filter();
         void Close()
         {
+            Mod.RevealingStarted -= Close;
+            dialog.Hide();
             dialog.QueueFree();
             if (GodotObject.IsInstanceValid(focus) && focus!.IsInsideTree() && focus.IsVisibleInTree()) focus.GrabFocus();
         }
         dialog.Confirmed += Close; dialog.Canceled += Close;
+        Mod.RevealingStarted += Close;
+        dialog.TreeExiting += () => Mod.RevealingStarted -= Close;
         Filter();
         dialog.PopupCenteredClamped(new Vector2I(1080, 740), 0.9f);
+        void Fit()
+        {
+            panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+            panel.OffsetLeft = 12; panel.OffsetTop = 12; panel.OffsetRight = -12; panel.OffsetBottom = -60;
+        }
+        dialog.SizeChanged += Fit;
+        // Wrapped labels initially measure at zero width. Godot grows Control offsets to that
+        // transient minimum and does not shrink them again; fit after two layout passes.
+        var tree = dialog.GetTree();
+        int passes = 2;
+        void Settle() { Fit(); if (--passes == 0) tree.ProcessFrame -= Settle; }
+        tree.ProcessFrame += Settle;
+        dialog.TreeExiting += () => tree.ProcessFrame -= Settle;
     }
 
     private void Filter()

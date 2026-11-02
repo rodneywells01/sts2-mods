@@ -9,6 +9,8 @@ $research = Join-Path $root '.research'
 $roles = if ($Case -eq 'compendium') { @('host') } else { @('host','client') }
 $processes = @()
 $manifests = @()
+$createdManifests = @()
+$passed = $false
 try {
     foreach ($role in $roles) {
         $stage = Join-Path $research "game-$role"
@@ -16,7 +18,7 @@ try {
         if ($override -notmatch "STS2ModTests/$role") { throw 'Isolated override.cfg required.' }
         if (Get-Process SlayTheSpire2 -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq (Join-Path $stage 'SlayTheSpire2.exe') }) { throw 'Close the staged game first.' }
         # Preserve earlier test mods while disabling their manifests in this isolated copy.
-        foreach ($id in @('GameProbe','RandomCharacterBlacklist','RelicRpsStats')) {
+        foreach ($id in @('GameProbe','RandomCharacterBlacklist','RelicRpsStats','RpsProbe')) {
             $original = Join-Path $stage "mods/$id/$id.json"
             if (Test-Path -LiteralPath $original) {
                 $hidden = Join-Path $research "rps-$role-$id.disabled"
@@ -32,7 +34,11 @@ try {
         Copy-Item -LiteralPath (Join-Path $root 'src/RelicRpsStats/bin/Release/net9.0/RelicRpsStats.dll') -Destination (Join-Path $stage 'mods/RpsProbe') -Force
         Copy-Item -LiteralPath (Join-Path $root 'tests/RpsProbe/bin/Release/net9.0/RpsProbe.dll') -Destination (Join-Path $stage 'mods/RpsProbe') -Force
         Copy-Item -LiteralPath (Join-Path $root 'tests/RpsProbe/RpsProbe.json') -Destination (Join-Path $stage 'mods/RpsProbe') -Force
-        if ($modded) { Copy-Item -LiteralPath (Join-Path $root 'src/RelicRpsStats/RelicRpsStats.json') -Destination (Join-Path $stage 'mods/RelicRpsStats') -Force }
+        $createdManifests += Join-Path $stage 'mods/RpsProbe/RpsProbe.json'
+        if ($modded) {
+            Copy-Item -LiteralPath (Join-Path $root 'src/RelicRpsStats/RelicRpsStats.json') -Destination (Join-Path $stage 'mods/RelicRpsStats') -Force
+            $createdManifests += Join-Path $stage 'mods/RelicRpsStats/RelicRpsStats.json'
+        }
         $account = if ($role -eq 'host') { '1' } else { '1000' }
         $settingsPath = Join-Path $research "appdata/STS2ModTests/$role/default/$account/settings.save"
         $settings = Get-Content -Raw -LiteralPath $settingsPath | ConvertFrom-Json
@@ -43,6 +49,10 @@ try {
         if (Test-Path -LiteralPath $saved) {
             # Archive rather than delete prior test observations.
             $archive = Join-Path $research ("rps-archive-" + $role + '-' + [Guid]::NewGuid().ToString('N'))
+            $resolvedResearch = [IO.Path]::GetFullPath($research) + [IO.Path]::DirectorySeparatorChar
+            foreach ($target in @($saved, $archive)) {
+                if (-not [IO.Path]::GetFullPath($target).StartsWith($resolvedResearch, [StringComparison]::OrdinalIgnoreCase)) { throw 'Archive path escapes isolated workspace.' }
+            }
             Move-Item -LiteralPath $saved -Destination $archive
         }
         $env:APPDATA = Join-Path $research 'appdata'
@@ -55,7 +65,6 @@ try {
         if ($Case -ne 'compendium') { if ($role -eq 'host') { $arguments += '-fastmp host_standard' } else { $arguments += '-fastmp join -clientId 1000' } }
         $processes += Start-Process -FilePath (Join-Path $stage 'SlayTheSpire2.exe') -WorkingDirectory $stage -ArgumentList $arguments -WindowStyle Hidden -PassThru
     }
-    $passed = $false
     for ($attempt = 0; $attempt -lt 90; $attempt++) {
         Start-Sleep -Seconds 1
         $complete = 0
@@ -73,13 +82,10 @@ try {
     Write-Host "PASS RPS $Case"
 }
 finally {
-    if (-not $KeepOpen) {
+    if (-not ($KeepOpen -and $passed)) {
         foreach ($process in $processes) { if (-not $process.HasExited) { $process.Kill(); $process.WaitForExit(5000) | Out-Null } }
-        foreach ($role in $roles) {
-            foreach ($id in @('RpsProbe','RelicRpsStats')) {
-                $active = Join-Path $research "game-$role/mods/$id/$id.json"
-                if (Test-Path -LiteralPath $active) { Move-Item -LiteralPath $active -Destination (Join-Path $research ("rps-disabled-" + [Guid]::NewGuid().ToString('N') + '.json.disabled')) }
-            }
+        foreach ($active in $createdManifests) {
+            if (Test-Path -LiteralPath $active) { Move-Item -LiteralPath $active -Destination (Join-Path $research ("rps-disabled-" + [Guid]::NewGuid().ToString('N') + '.json.disabled')) }
         }
         foreach ($manifest in $manifests) { Move-Item -LiteralPath $manifest.Hidden -Destination $manifest.Original }
     }

@@ -81,12 +81,18 @@ public static class Probe
             for (int i = 0; i < 40 && sync.CurrentRelics == null; i++) await Wait(0.2);
             Check(sync.CurrentRelics?.Count >= 2, "Native multiplayer relic choices");
             var screen = Nodes(room).OfType<NTreasureRoomRelicCollection>().Single();
-            bool installed = screen.GetNodeOrNull("RelicRpsSummary") != null;
+            bool installed = Nodes(room).Any(n => n.Name == "RelicRpsSummary");
             Record("Modded=" + installed);
             await Wait(2);
+            if (installed && role == "host")
+            {
+                Nodes(room).OfType<Button>().Single(b => b.Text == "Rock Paper Scissors stats").EmitSignal(BaseButton.SignalName.Pressed);
+                Check(Nodes(room).OfType<AcceptDialog>().Any(d => d.Visible), "Stats can open while waiting for peer vote");
+            }
             sync.PickRelicLocally(0);
             for (int i = 0; i < 100 && results == null; i++) await Wait(0.2);
             Check(results != null, "Native synchronized award event");
+            if (installed) Check(!Nodes(room).OfType<AcceptDialog>().Any(d => d.Visible), "Active stats viewer closes before precomputed result is recorded");
             var fight = results!.Single(r => r.type == RelicPickingResultType.FoughtOver);
             Record("Winner=" + fight.player!.NetId + ";rounds=" + JsonSerializer.Serialize(fight.fight!.rounds.Select(r => r.moves)));
             await screen.RelicPickingFinished();
@@ -100,6 +106,8 @@ public static class Probe
                 Check(!Book.Add(c), "Duplicate delivery ignored");
                 var store = new StatsStore(Path.Combine(OS.GetUserDataDir(), Mod.Id, "stats.json"));
                 Check(store.Load().Events.Count == 1, "Persisted record reloads");
+                var summary = Nodes(room).OfType<Control>().Single(n => n.Name == "RelicRpsSummary");
+                Check(summary.IsVisibleInTree(), "Updated stats remain visible after native award screen closes");
                 // Keep the actual selection interface visible for review after the native animation.
                 screen.Visible = true; screen.Modulate = Colors.White;
                 await Wait(0.4);
@@ -136,14 +144,22 @@ public static class Probe
             {
                 stopwatch.Restart(); next.EmitSignal(BaseButton.SignalName.Pressed); times.Add(stopwatch.Elapsed.TotalMilliseconds);
                 Check(Nodes(dialog).Count(n => n.Name.ToString().StartsWith("OpponentRow_")) == 25, "Row cap after page " + (i + 2));
+                await Wait(0.03);
             }
             Record("40 page updates ms=" + JsonSerializer.Serialize(times));
             var search = Nodes(dialog).OfType<LineEdit>().Single();
             search.Text = "09999";
+            search.EmitSignal(LineEdit.SignalName.TextChanged, search.Text);
             Check(Nodes(dialog).Count(n => n.Name.ToString().StartsWith("OpponentRow_")) == 1, "Search covers final teammate beyond current page");
             search.Text = "";
+            search.EmitSignal(LineEdit.SignalName.TextChanged, search.Text);
             Check(Nodes(dialog).Count(n => n.Name.ToString().StartsWith("OpponentRow_")) == 25, "Clearing search restores cap");
             await Wait(0.5);
+            var panel = dialog.GetNode<Control>("StatsContents");
+            foreach (var control in Nodes(panel).OfType<Control>().Take(15))
+                Record($"Control {control.GetType().Name} {control.Name}: size={control.Size} min={control.GetCombinedMinimumSize()}");
+            Check(panel.Size.Y <= dialog.Size.Y && Nodes(dialog).OfType<ScrollContainer>().Single().Size.Y < dialog.Size.Y,
+                "Content and scrolling stay inside dialog height");
             if (DisplayServer.GetName() != "headless") NGame.Instance!.GetViewport().GetTexture().GetImage().SavePng(output + ".png");
             Check(Nodes(dialog).OfType<Label>().Any(l => l.Text.Contains("10000 W")), "Totals cover whole fixture");
             Record("COMPLETE fixture preview left open for native input QA");

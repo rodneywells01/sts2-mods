@@ -52,8 +52,12 @@ try
     string path = Path.Combine(folder, "stats.json");
     var store = new StatsStore(path);
     Check(store.Load().Events.Count == 0, "Missing file starts empty");
-    await store.SaveAsync(book.Events.ToArray());
+    string generation = book.RunKey("Steam:1/seed/1,2");
+    Check(book.RunKey("Steam:1/seed/1,2") == generation, "Reload ignores differing native peer timestamps");
+    await store.SaveAsync(book.Events.ToArray(), new Dictionary<string, string>(book.RunKeys));
     var reloaded = store.Load();
+    Check(reloaded.RunKey("Steam:1/seed/1,2") == generation, "Run identity survives process restart");
+    Check(reloaded.RunKey("Steam:1/seed/1,2", newRun: true) != generation, "New seeded run rotates identity");
     Check(reloaded.Events.Count == book.Events.Count && !reloaded.Add(win), "Restart preserves history and deduplication");
     Check(reloaded.Profiles["Steam:1"].Totals.RelicWins == 2, "Restart reconstructs totals");
     await Task.WhenAll(store.SaveAsync([win]), store.SaveAsync(book.Events.ToArray()));

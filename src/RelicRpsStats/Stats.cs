@@ -38,9 +38,31 @@ public sealed class StatsBook
     public const int PageSize = 25;
     private readonly HashSet<string> keys = new(StringComparer.Ordinal);
     private readonly List<Contest> events = new();
+    private readonly Dictionary<string, string> runKeys = new(StringComparer.Ordinal);
     public IReadOnlyList<Contest> Events => events;
+    public IReadOnlyDictionary<string, string> RunKeys => runKeys;
     public Dictionary<string, Profile> Profiles { get; } = new(StringComparer.Ordinal);
     public static string Key(string identity) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)));
+
+    // Native peers create different start timestamps; clients adopt the host's timestamp on reload.
+    // Persist our own generation for the native save slot (seed + roster + local account).
+    // Starting a new run explicitly rotates it; loading that slot reuses it.
+    public string RunKey(string signature, bool newRun = false)
+    {
+        string key = Key(signature);
+        if (newRun || !runKeys.ContainsKey(key)) runKeys[key] = Guid.NewGuid().ToString("N");
+        return runKeys[key];
+    }
+
+    public void RestoreRunKeys(Dictionary<string, string>? saved)
+    {
+        foreach (var pair in saved ?? [])
+        {
+            if (pair.Key.Length != 64 || !pair.Key.All(Uri.IsHexDigit) || !Guid.TryParseExact(pair.Value, "N", out _))
+                throw new InvalidDataException("Invalid saved run identity.");
+            runKeys.Add(pair.Key, pair.Value);
+        }
+    }
 
     public bool Add(Contest contest)
     {
@@ -112,7 +134,7 @@ public sealed class StatsBook
     }
 }
 
-public sealed record StatsFile(int SchemaVersion, Contest[] Events);
+public sealed record StatsFile(int SchemaVersion, Contest[] Events, Dictionary<string, string>? Runs = null);
 
 // Serialized background writes keep disk I/O off the game thread. Failed writes retain the old file.
 public sealed class StatsStore(string path)
@@ -126,12 +148,13 @@ public sealed class StatsStore(string path)
         if (new FileInfo(path).Length > MaxBytes) throw new InvalidDataException("Stats file exceeds 64 MiB.");
         var file = JsonSerializer.Deserialize<StatsFile>(File.ReadAllText(path)) ?? throw new InvalidDataException("Empty stats file.");
         if (file.SchemaVersion != 1 || file.Events == null) throw new InvalidDataException("Unsupported stats schema.");
+        book.RestoreRunKeys(file.Runs);
         foreach (var contest in file.Events)
             if (!book.Add(contest)) throw new InvalidDataException("Duplicate saved contest.");
         return book;
     }
 
-    public async Task SaveAsync(Contest[] snapshot)
+    public async Task SaveAsync(Contest[] snapshot, Dictionary<string, string>? runs = null)
     {
         await gate.WaitAsync().ConfigureAwait(false);
         string temp = path + ".tmp";
@@ -139,7 +162,7 @@ public sealed class StatsStore(string path)
         {
             await Task.Run(() =>
             {
-                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new StatsFile(1, snapshot));
+                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new StatsFile(1, snapshot, runs));
                 if (bytes.Length > MaxBytes) throw new InvalidDataException("Stats file exceeds 64 MiB.");
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))

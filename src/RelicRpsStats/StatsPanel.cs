@@ -8,7 +8,9 @@ internal sealed class StatsPanel
     internal StatsPanel(Control parent)
     {
         var panel = CreatePanel("RelicRpsSummary");
-        parent.AddChild(panel);
+        // Keep the updated record visible after native relic awards fade out, until leaving the room.
+        var room = parent.GetParent() as Control ?? parent;
+        room.AddChild(panel);
         panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomLeft);
         panel.OffsetLeft = 30; panel.OffsetRight = 620;
         panel.OffsetTop = -180; panel.OffsetBottom = -35;
@@ -17,7 +19,7 @@ internal sealed class StatsPanel
         stack.AddChild(summary);
         var button = new Button { Text = "Rock Paper Scissors stats", FocusMode = Control.FocusModeEnum.None };
         stack.AddChild(button);
-        button.Pressed += () => Mod.ShowStats(parent);
+        button.Pressed += () => Mod.ShowStats(room);
         Refresh();
     }
 

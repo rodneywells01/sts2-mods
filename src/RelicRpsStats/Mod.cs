@@ -25,6 +25,7 @@ public static class Mod
     private static readonly ConditionalWeakTable<NTreasureRoomRelicCollection, StatsPanel> Panels = new();
     [ThreadStatic] private static AwardCapture? capture;
     private static bool revealing;
+    internal static event Action? RevealingStarted;
     private sealed record AwardCapture(TreasureRoomRelicSynchronizer Sync, string Owner, string Platform,
         string RoomKey, List<Contest> Contests);
 
@@ -45,6 +46,7 @@ public static class Mod
         harmony.Patch(AccessTools.Method(typeof(NTreasureRoomRelicCollection), "InitializeRelics"), postfix: Hook(nameof(TreasureReady)));
         harmony.Patch(AccessTools.Method(typeof(NTreasureRoomRelicCollection), "AnimateRelicAwards"), postfix: Hook(nameof(AnimateAwards)));
         harmony.Patch(AccessTools.Method(typeof(NCompendiumSubmenu), "_Ready"), postfix: Hook(nameof(CompendiumReady)));
+        harmony.Patch(AccessTools.Method(typeof(RunManager), "SetUpNewMultiplayer"), postfix: Hook(nameof(NewRun)));
         GD.Print($"[{Id}] 0.1.0 loaded. Observing native awards; stats: {OS.GetUserDataDir()}/{Id}/stats.json");
     }
 
@@ -65,9 +67,8 @@ public static class Mod
             if (run == null || run.Players.Count < 2) return;
             string platform = manager.NetService.Platform.ToString();
             string owner = platform + ":" + manager.NetService.NetId;
-            long start = (long)AccessTools.Field(typeof(RunManager), "_startTime").GetValue(manager)!;
-            string roster = string.Join(",", run.Players.Select(p => p.NetId).Order());
-            string room = $"{platform}/{start}/{run.Rng.Seed}/{roster}/{run.CurrentActIndex}/{run.TotalFloor}/{run.CurrentMapCoord}/{run.CurrentRoomCount}";
+            string generation = Book.RunKey(RunSignature());
+            string room = $"{generation}/{run.CurrentActIndex}/{run.TotalFloor}/{run.CurrentMapCoord}/{run.CurrentRoomCount}";
             capture = new AwardCapture(__instance, owner, platform, room, new());
         });
     }
@@ -97,13 +98,29 @@ public static class Mod
         {
             bool changed = false;
             foreach (var contest in capture?.Contests ?? []) changed |= Book.Add(contest);
-            if (changed) PendingSave = Persist(Book.Events.ToArray());
+            if (changed) QueueSave();
         });
     }
 
-    private static async Task Persist(Contest[] snapshot)
+    private static string RunSignature()
     {
-        try { await Store.SaveAsync(snapshot); SaveError = null; }
+        var run = RunManager.Instance.DebugOnlyGetState()!;
+        string roster = string.Join(",", run.Players.Select(p => p.NetId).Order());
+        return $"{CurrentOwner()}/{run.Rng.Seed}/{roster}";
+    }
+
+    private static void NewRun() => Safe(() =>
+    {
+        if (LoadError != null) return;
+        Book.RunKey(RunSignature(), newRun: true);
+        QueueSave();
+    });
+
+    private static void QueueSave() => PendingSave = Persist(Book.Events.ToArray(), new Dictionary<string, string>(Book.RunKeys));
+
+    private static async Task Persist(Contest[] snapshot, Dictionary<string, string> runs)
+    {
+        try { await Store.SaveAsync(snapshot, runs); SaveError = null; }
         catch (Exception e)
         {
             SaveError = "Stats are in memory only. Saving failed; check file permissions and disk space. Next result retries.";
@@ -126,6 +143,7 @@ public static class Mod
     private static void AnimateAwards(NTreasureRoomRelicCollection __instance, ref Task __result)
     {
         revealing = true;
+        Safe(() => RevealingStarted?.Invoke());
         __result = AfterAnimation(__result, __instance);
     }
 
