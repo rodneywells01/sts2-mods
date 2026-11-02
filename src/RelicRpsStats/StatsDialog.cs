@@ -29,7 +29,9 @@ internal sealed class StatsDialog
         panel.OffsetLeft = 12; panel.OffsetTop = 12; panel.OffsetRight = -12; panel.OffsetBottom = -60;
         var stack = new VBoxContainer(); stack.AddThemeConstantOverride("separation", 10); panel.AddChild(stack);
         stack.AddChild(new Label { Text = "ROCK • PAPER • SCISSORS", HorizontalAlignment = HorizontalAlignment.Center });
-        profiles = new OptionButton(); stack.AddChild(profiles);
+        profiles = new OptionButton { FitToLongestItem = false, ClipText = true,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis };
+        stack.AddChild(profiles);
         owners = book.Profiles.Values.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ThenBy(p => p.Id, StringComparer.Ordinal).ToArray();
         for (int i = 0; i < owners.Length; i++) profiles.AddItem($"{owners[i].Name} ({owners[i].Id})", i);
         if (owners.Length == 0) profiles.AddItem("No recorded multiplayer contests yet");

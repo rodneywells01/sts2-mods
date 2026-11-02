@@ -50,11 +50,22 @@ internal sealed class StatsPanel
 
     internal static void AddCompendiumButton(Control parent)
     {
-        var button = new Button { Name = "RelicRpsStatsButton", Text = "Rock Paper Scissors stats",
-            Theme = new Theme { DefaultFontSize = 26 }, FocusMode = Control.FocusModeEnum.All };
+        using var icon = new Image();
+        icon.LoadSvgFromString("""
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <g fill="#e5c77e">
+            <rect x="4" y="18" width="6" height="10" rx="1.5"/>
+            <rect x="13" y="10" width="6" height="18" rx="1.5"/>
+            <rect x="22" y="4" width="6" height="24" rx="1.5"/>
+            </g></svg>
+            """, 4);
+        var button = new Button { Name = "RelicRpsStatsButton", Icon = ImageTexture.CreateFromImage(icon),
+            ExpandIcon = true, TooltipText = "Rock Paper Scissors stats",
+            CustomMinimumSize = new Vector2(56, 56), FocusMode = Control.FocusModeEnum.All };
         parent.AddChild(button);
+        button.AddThemeConstantOverride("icon_max_width", 32);
         button.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
-        button.OffsetLeft = -460; button.OffsetRight = -45; button.OffsetTop = 115; button.OffsetBottom = 170;
+        button.OffsetLeft = -101; button.OffsetRight = -45; button.OffsetTop = 115; button.OffsetBottom = 171;
         button.Pressed += () => Mod.ShowStats(parent);
     }
 }

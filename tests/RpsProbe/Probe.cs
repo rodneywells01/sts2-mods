@@ -21,6 +21,8 @@ public static class Probe
     private static readonly string role = Environment.GetEnvironmentVariable("RPS_PROBE_ROLE") ?? "host";
     private static readonly string output = Environment.GetEnvironmentVariable("RPS_PROBE_OUTPUT") ?? throw new Exception("Output required");
     private static readonly List<string> checks = new();
+    private static readonly bool expectedModded = (Environment.GetEnvironmentVariable("RPS_PROBE_EXPECT_MODDED")
+        ?? throw new Exception("Expected mod state required")) == "1";
     private static bool started;
     private static StatsBook Book => (StatsBook)AccessTools.Field(typeof(Mod), "Book").GetValue(null)!;
     private static Task Pending => (Task)AccessTools.Field(typeof(Mod), "PendingSave").GetValue(null)!;
@@ -82,6 +84,7 @@ public static class Probe
             Check(sync.CurrentRelics?.Count >= 2, "Native multiplayer relic choices");
             var screen = Nodes(room).OfType<NTreasureRoomRelicCollection>().Single();
             bool installed = Nodes(room).Any(n => n.Name == "RelicRpsSummary");
+            Check(installed == expectedModded, "Observed stats mod matches runner expectation: " + expectedModded);
             Record("Modded=" + installed);
             await Wait(2);
             if (installed && role == "host")
@@ -127,10 +130,16 @@ public static class Probe
             // Intentional upper-bound fixture: 10,000 teammates with long, untrusted display names.
             for (int i = 0; i < 10000; i++)
                 Book.Add(new Contest(StatsBook.Key("fixture" + i), "None:1", ["None:1", "None:" + (i + 2)],
-                    ["Fixture Player", $"Teammate {i:D5} [b]" + new string('W', 80)], "None:1", [[0, 0], [1, 0]]));
+                    [new string('W', 80), $"Teammate {i:D5} [b]" + new string('W', 80)], "None:1", [[0, 0], [1, 0]]));
             var menu = main.OpenCompendiumSubmenu();
             await Wait(0.5);
             var button = menu.GetNode<Button>("RelicRpsStatsButton");
+            Check(expectedModded && AccessTools.Field(typeof(Mod), "Store").GetValue(null) != null,
+                "Expected stats initializer ran before viewer test");
+            Check(button.Text.Length == 0 && button.Icon != null && button.Size.X <= 64 && button.Size.Y <= 64,
+                "Compendium stats entry is a compact icon button");
+            Check(button.TooltipText == "Rock Paper Scissors stats", "Icon retains descriptive hover help");
+            if (DisplayServer.GetName() != "headless") NGame.Instance!.GetViewport().GetTexture().GetImage().SavePng(output + ".button.png");
             var stopwatch = Stopwatch.StartNew(); button.EmitSignal(BaseButton.SignalName.Pressed);
             await Wait(0.1);
             Record("Open fixture ms including 100 ms frame wait=" + stopwatch.Elapsed.TotalMilliseconds);
@@ -158,8 +167,9 @@ public static class Probe
             var panel = dialog.GetNode<Control>("StatsContents");
             foreach (var control in Nodes(panel).OfType<Control>().Take(15))
                 Record($"Control {control.GetType().Name} {control.Name}: size={control.Size} min={control.GetCombinedMinimumSize()}");
-            Check(panel.Size.Y <= dialog.Size.Y && Nodes(dialog).OfType<ScrollContainer>().Single().Size.Y < dialog.Size.Y,
-                "Content and scrolling stay inside dialog height");
+            Check(panel.Size.Y <= dialog.Size.Y && panel.Size.X <= dialog.Size.X &&
+                Nodes(dialog).OfType<ScrollContainer>().Single().Size.Y < dialog.Size.Y,
+                "Long account name, content and scrolling stay inside dialog bounds");
             if (DisplayServer.GetName() != "headless") NGame.Instance!.GetViewport().GetTexture().GetImage().SavePng(output + ".png");
             Check(Nodes(dialog).OfType<Label>().Any(l => l.Text.Contains("10000 W")), "Totals cover whole fixture");
             Record("COMPLETE fixture preview left open for native input QA");

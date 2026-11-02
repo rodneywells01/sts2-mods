@@ -57,6 +57,7 @@ try {
         }
         $env:APPDATA = Join-Path $research 'appdata'
         $env:RPS_PROBE_ROLE = if ($Case -eq 'compendium') { 'compendium' } else { $role }
+        $env:RPS_PROBE_EXPECT_MODDED = if ($modded) { '1' } else { '0' }
         $result = Join-Path $research "rps-$Case-$role.json"
         if (Test-Path -LiteralPath $result) { Move-Item -LiteralPath $result -Destination ($result + '.' + [Guid]::NewGuid().ToString('N') + '.old') }
         $env:RPS_PROBE_OUTPUT = $result
