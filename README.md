@@ -1,5 +1,9 @@
 # Slay the Spire 2 Mods
 
+## New mod: Relic Rock Paper Scissors Stats
+
+Tracks lifetime contested-relic wins, individual throws (wins/losses/ties), and per-teammate records. View a summary during multiplayer treasure selection or open **Compendium → Rock Paper Scissors stats** for searchable, paginated history. This is a separate local preview for Windows game v0.111.0; it does not change the native rolls or awards. [Installation, behavior and development](docs/relic-rps-stats.md). Build with `scripts/Build-Rps.ps1`.
+
 Create, load, test, and distribute Slay the Spire 2 mods. The first mod is **Random Character Options**, a multiplayer-compatible character-selection helper.
 
 **[Download the Windows installer ZIP](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip)**
