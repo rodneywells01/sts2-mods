@@ -1,0 +1,12 @@
+{
+  "id": "RelicRpsStats",
+  "name": "Relic Rock Paper Scissors Stats",
+  "author": "Rodney Wells",
+  "description": "Local lifetime and teammate records for contested treasure relics. View stats at treasure selection or in the Compendium.",
+  "version": "0.1.0",
+  "min_game_version": "0.111.0",
+  "has_dll": true,
+  "has_pck": false,
+  "affects_gameplay": false,
+  "dependencies": []
+}
