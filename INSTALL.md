@@ -2,12 +2,14 @@
 
 **For Windows and Slay the Spire 2 v0.111.0.** You do not need coding tools, BaseLib, or another mod loader.
 
+This branch prepares **0.1.4**. To review the new reveal modes, use Rodney's local `RandomCharacterBlacklist-0.1.4.zip`. The public download below is still **0.1.2**, which has immediate reveal only.
+
 ## Install — five steps
 
 1. **Close Slay the Spire 2 completely.**
 2. **[Download RandomCharacterBlacklist-0.1.2.zip](https://github.com/rodneywells01/sts2-mods/releases/download/v0.1.2/RandomCharacterBlacklist-0.1.2.zip).** Use the ZIP provided by Rodney or the matching asset under [GitHub Releases](https://github.com/rodneywells01/sts2-mods/releases). Do **not** download “Source code” or use the green Code button. The installer is listed under Assets on the release page.
 3. **Right-click the downloaded ZIP → Extract All → Extract.** Open the extracted folder. You should see `Install.cmd`, `Install.ps1`, and a folder named `RandomCharacterBlacklist`. Do not run the installer from inside the ZIP.
-4. **Double-click `Install.cmd`.** It finds your Steam installation. Wait for **“Installed Random Character Options 0.1.2”**. If it asks for the game folder, follow “Find the game folder” below. An error message means installation has not completed.
+4. **Double-click `Install.cmd`.** It finds your Steam installation. Wait for **“Installed Random Character Options”** followed by your ZIP's version (0.1.4 for the review build). If it asks for the game folder, follow “Find the game folder” below. An error message means installation has not completed.
 5. **Launch the game.** Enable mod loading if the game prompts you, and restart if requested. In **Settings → Mod Settings**, make sure **Random Character Options** is enabled.
 
 **Check it worked:** open a standard character-selection screen. A **dice icon** should appear at the top right. Click it or press **F8**.
@@ -15,7 +17,8 @@
 ## Use it
 
 - Under **Include in Random**, turn off characters you do not want. Keep at least one unlocked character on.
-- Click the game's **Random** character button. Every click rolls again; the same character may appear twice.
+- In 0.1.4, choose **Immediately** to reveal each Random roll, or **At lock-in** to keep the mystery screen until **Embark / Ready**. Both modes honor your included characters; repeats are possible.
+- At lock-in, the result becomes visible to you and your lobby. It is a fresh roll, independent of the run seed. If you unready, the revealed pick stays selected; choose Random again for another mystery pick.
 - Turn **Custom Random** off to restore the game's normal Random behavior.
 - Each player's choices apply only to that player. Install on each computer whose player wants these controls.
 
@@ -54,4 +57,4 @@ Do not put the whole ZIP/extracted package inside `mods`, and do not add a secon
 
 There is no published Workshop listing yet. If you later install through Workshop, remove the manual copy first so the game loads only one copy.
 
-The game separates modded and unmodded saves. This installer does not move or convert saves. This preview has passed local multiplayer tests; a real Steam friend session and full-run playtest remain outstanding. See `VALIDATION.md` in the ZIP or [validation details](packaging/VALIDATION.md) in the repository.
+The game separates modded and unmodded saves. This installer does not move or convert saves. Rodney reported a successful Steam match with an unmodded friend on the previous version. The new mode still needs that player check. See `VALIDATION.md` in the ZIP or [validation details](packaging/VALIDATION.md) in the repository.

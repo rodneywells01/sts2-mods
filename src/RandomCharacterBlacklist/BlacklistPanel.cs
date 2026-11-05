@@ -7,16 +7,20 @@ internal sealed class BlacklistPanel
 {
     private readonly NCharacterSelectScreen screen;
     private readonly VBoxContainer contents;
+    private readonly PanelContainer dropdown;
     private readonly Label status;
     private readonly Button toggle;
     private readonly PanelContainer root;
     private readonly Button reset;
     private readonly CheckButton enabled;
+    private readonly Button immediate;
+    private readonly Button atLockIn;
+    private readonly Label modeHint;
     private Tween? resultTween;
     private readonly CharacterPreview preview;
     private Control? previousFocus;
     private readonly List<(CheckButton Toggle, NCharacterSelectButton Character)> rows = new();
-    internal bool IsOpen => contents.Visible;
+    internal bool IsOpen => dropdown.Visible;
 
     internal IEnumerable<NCharacterSelectButton> CharacterButtons()
         => screen.GetNode<Control>("CharSelectButtons/ButtonContainer").GetChildren().OfType<NCharacterSelectButton>();
@@ -25,7 +29,8 @@ internal sealed class BlacklistPanel
     {
         this.screen = screen;
         root = new PanelContainer { Name = "RandomCharacterBlacklistPanel", ZIndex = 20,
-            Theme = new Theme { DefaultFontSize = 24 } };
+            Theme = new Theme { DefaultFontSize = 24, DefaultFont = CreateScalableFont() },
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear };
         screen.AddChild(root);
         preview = new CharacterPreview(screen, root);
         root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
@@ -40,9 +45,11 @@ internal sealed class BlacklistPanel
             CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
             ContentMarginLeft = 16, ContentMarginRight = 16, ContentMarginTop = 12, ContentMarginBottom = 12
         };
-        root.AddThemeStyleboxOverride("panel", style);
-        root.AddThemeFontSizeOverride("font_size", 20);
-        var stack = new VBoxContainer();
+        // The root only lays out controls. Padding belongs to the dropdown, so
+        // the entire visible dice surface is the actual button's hit target.
+        root.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+        root.MouseFilter = Control.MouseFilterEnum.Ignore;
+        var stack = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         stack.AddThemeConstantOverride("separation", 10);
         root.AddChild(stack);
         using var dice = new Godot.Image();
@@ -56,18 +63,59 @@ internal sealed class BlacklistPanel
             <circle cx="12" cy="25" r="2.4"/><circle cx="23" cy="24" r="2.4"/>
             <circle cx="34" cy="15" r="2.4"/><circle cx="40" cy="22" r="2.4"/><circle cx="46" cy="29" r="2.4"/>
             </g></svg>
-            """);
+            """, scale: 4f);
         toggle = new Button { Name = "RandomOptionsDice", Icon = ImageTexture.CreateFromImage(dice),
-            FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(64, 44),
+            ExpandIcon = true,
+            FocusMode = Control.FocusModeEnum.None, CustomMinimumSize = new Vector2(96, 68),
+            IconAlignment = HorizontalAlignment.Center,
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd, TooltipText = "Random options (F8)" };
+        toggle.AddThemeConstantOverride("icon_max_width", 58);
+        foreach (var (state, background, border) in new[]
+        {
+            ("normal", "172029", "8c7953"),
+            ("hover", "22303a", "d9bd77"),
+            ("pressed", "111a22", "d9bd77"),
+            ("disabled", "172029", "8c7953")
+        })
+        {
+            var buttonStyle = (StyleBoxFlat)style.Duplicate();
+            buttonStyle.BgColor = new Color(background);
+            buttonStyle.BorderColor = new Color(border);
+            toggle.AddThemeStyleboxOverride(state, buttonStyle);
+        }
         stack.AddChild(toggle);
-        contents = new VBoxContainer { Visible = false };
-        contents.AddThemeConstantOverride("separation", 7);
-        stack.AddChild(contents);
+        dropdown = new PanelContainer { Name = "RandomOptionsDropdown", Visible = false, CustomMinimumSize = new Vector2(440, 0) };
+        dropdown.AddThemeStyleboxOverride("panel", style);
+        stack.AddChild(dropdown);
+        contents = new VBoxContainer();
+        contents.AddThemeConstantOverride("separation", 10);
+        dropdown.AddChild(contents);
         toggle.Pressed += Toggle;
+        var title = new Label { Text = "Random options" };
+        title.AddThemeColorOverride("font_color", new Color("f4e5bd"));
+        title.AddThemeFontSizeOverride("font_size", 28);
+        contents.AddChild(title);
         enabled = new CheckButton { Text = "Custom Random", ButtonPressed = Mod.Preferences.Enabled, FocusMode = Control.FocusModeEnum.All };
         contents.AddChild(enabled);
         enabled.TooltipText = "Turn off to restore the game's normal seeded Random selection.";
+        contents.AddChild(new HSeparator());
+        contents.AddChild(new Label { Text = "Reveal character" });
+        var modes = new HBoxContainer();
+        modes.AddThemeConstantOverride("separation", 8);
+        contents.AddChild(modes);
+        immediate = new Button { Name = "RevealImmediately", Text = "Immediately", ToggleMode = true,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 46) };
+        atLockIn = new Button { Name = "RevealAtLockIn", Text = "At lock-in", ToggleMode = true,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 46) };
+        modes.AddChild(immediate);
+        modes.AddChild(atLockIn);
+        immediate.Pressed += () => SetRevealMode(RevealMode.Immediately);
+        atLockIn.Pressed += () => SetRevealMode(RevealMode.AtLockIn);
+        modeHint = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(400, 64) };
+        modeHint.AddThemeFontSizeOverride("font_size", 20);
+        modeHint.AddThemeColorOverride("font_color", new Color("b6c3cb"));
+        contents.AddChild(modeHint);
+        contents.AddChild(new HSeparator());
         var hint = new Label { Text = "Include in Random", AutowrapMode = TextServer.AutowrapMode.WordSmart };
         contents.AddChild(hint);
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(350, 270), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
@@ -116,7 +164,7 @@ internal sealed class BlacklistPanel
         contents.AddChild(footer);
         reset.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         footer.AddChild(reset);
-        const string help = "Characters switched on are included in Random.\nAll characters are included by default.\nChoices save automatically on this computer.\n\nWith Custom Random on, each click rolls again and\nreveals the pick immediately. The same character\ncan be picked again. Manual picks are always allowed.\n\nTurn Custom Random off for normal game behavior:\nRandom is revealed at embark using the run seed.\nYour choices never restrict other players.\n\nF8 opens or closes these options. Escape closes them.";
+        const string help = "Characters switched on are included in Custom Random.\nAll characters start included. Choices save automatically.\n\nImmediately: each Random activation rolls and reveals a pick.\nAt lock-in: keep the mystery screen until Embark / Ready,\nthen roll from your included, unlocked characters.\nThe pick becomes visible to you and the lobby at lock-in.\nBoth custom modes use a fresh roll, independent of the run seed.\n\nCustom Random off restores the exact vanilla behavior:\nRandom resolves at run start using the run seed, without filters.\nManual picks are always allowed. Friends need no mod.\n\nF8 opens or closes these options. Escape closes them.";
         const string creditedHelp = help + "\n\nBuilt by Rodney Wells (WatersEdge) with GPT-6 Astra.";
         var info = new Button
         {
@@ -134,7 +182,7 @@ internal sealed class BlacklistPanel
         };
         reset.Pressed += () =>
         {
-            Mod.Preferences = new Preferences { Enabled = enabled.ButtonPressed };
+            Mod.Preferences = new Preferences { Enabled = enabled.ButtonPressed, Reveal = Mod.Preferences.Reveal };
             foreach (var row in rows) row.Toggle.SetPressedNoSignal(true);
             Mod.PreferenceError = null;
             Save();
@@ -143,8 +191,9 @@ internal sealed class BlacklistPanel
         contents.AddChild(status);
         enabled.Toggled += active =>
         {
+            if (screen.Lobby?.LocalPlayer.isReady == true) { enabled.SetPressedNoSignal(Mod.Preferences.Enabled); return; }
             bool pendingVanillaRandom = screen.Lobby?.LocalPlayer.character is MegaCrit.Sts2.Core.Models.Characters.RandomCharacter;
-            if (active && pendingVanillaRandom && (Mod.PreferenceError != null || EligibleCount() == 0))
+            if (active && Mod.Preferences.Reveal == RevealMode.Immediately && pendingVanillaRandom && (Mod.PreferenceError != null || EligibleCount() == 0))
             {
                 enabled.SetPressedNoSignal(false);
                 ShowMessage("Include an unlocked character before enabling Custom Random.");
@@ -154,12 +203,12 @@ internal sealed class BlacklistPanel
             toggle.TooltipText = active ? "Random options (F8)" : "Random options (F8) — Custom Random off";
             toggle.SelfModulate = new Color(1, 1, 1, active ? 1f : 0.55f);
             Save();
-            if (active && pendingVanillaRandom) Mod.Roll(screen);
+            if (active && pendingVanillaRandom && Mod.Preferences.Reveal == RevealMode.Immediately) Mod.Roll(screen);
         };
         var randomButton = CharacterButtons().FirstOrDefault(button => button.IsRandom);
         if (randomButton != null) randomButton.Released += _ => Mod.Roll(screen);
         // Leave native character-row navigation alone. Only F8/mouse opens this panel.
-        var focusOrder = new List<Control> { enabled };
+        var focusOrder = new List<Control> { enabled, immediate, atLockIn };
         focusOrder.AddRange(rows.Select(row => (Control)row.Toggle));
         focusOrder.Add(reset);
         focusOrder.Add(info);
@@ -171,29 +220,73 @@ internal sealed class BlacklistPanel
         Refresh();
         toggle.SelfModulate = new Color(1, 1, 1, Mod.Preferences.Enabled ? 1f : 0.55f);
         screen.Resized += FitPanel;
+        screen.VisibilityChanged += () => { if (!screen.IsVisibleInTree()) { dropdown.Hide(); preview.Cancel(); } };
+        screen.TreeExiting += () => { resultTween?.Kill(); screen.Resized -= FitPanel; };
         Callable.From(FitPanel).CallDeferred();
     }
 
     private void FitPanel()
     {
+        if (!GodotObject.IsInstanceValid(root) || !root.IsInsideTree()) return;
         root.ResetSize();
-        root.Position = new Vector2(screen.Size.X - 28 - root.Size.X, 26);
+        float scale = Math.Min(1f, Math.Min((screen.Size.X - 56) / Math.Max(root.Size.X, 1),
+            (screen.Size.Y - 52) / Math.Max(root.Size.Y, 1)));
+        root.Scale = Vector2.One * Math.Max(0.1f, scale);
+        root.Position = new Vector2(Math.Max(0, screen.Size.X - 28 - root.Size.X * root.Scale.X), 26);
+    }
+
+    private static Font CreateScalableFont()
+    {
+        // A private copy keeps the game's theme untouched. MSDF glyphs stay crisp
+        // when the character screen scales its canvas across display resolutions.
+        var font = (Font)ThemeDB.FallbackFont.Duplicate();
+        if (font is FontFile file) file.MultichannelSignedDistanceField = true;
+        else if (font is SystemFont system) system.MultichannelSignedDistanceField = true;
+        return font;
+    }
+
+    private void SetRevealMode(RevealMode mode)
+    {
+        // Switching to immediate mode resolves an existing mystery selection;
+        // switching to lock-in affects the next Random activation, never manual picks.
+        bool pending = screen.Lobby?.LocalPlayer.character is MegaCrit.Sts2.Core.Models.Characters.RandomCharacter;
+        if (screen.Lobby?.LocalPlayer.isReady == true) { Refresh(); return; }
+        if (Mod.Preferences.Enabled && mode == RevealMode.Immediately && pending &&
+            (Mod.PreferenceError != null || EligibleCount() == 0))
+        {
+            Refresh();
+            ShowMessage("Include an unlocked character before revealing this Random pick.");
+            return;
+        }
+        Mod.Preferences.Reveal = mode;
+        Save();
+        if (Mod.Preferences.Enabled && mode == RevealMode.Immediately && pending) Mod.Roll(screen);
     }
 
     internal void Toggle()
     {
-        if (!contents.Visible) previousFocus = screen.GetViewport().GuiGetFocusOwner();
-        contents.Visible = !contents.Visible;
-        if (contents.Visible) preview.Warm(CharacterButtons().Where(b => !b.IsRandom).Select(b => b.Character));
+        if (!dropdown.Visible) previousFocus = screen.GetViewport().GuiGetFocusOwner();
+        dropdown.Visible = !dropdown.Visible;
+        if (dropdown.Visible) preview.Warm(CharacterButtons().Where(b => !b.IsRandom).Select(b => b.Character));
         else preview.Cancel();
         Callable.From(FitPanel).CallDeferred();
         Refresh();
-        if (contents.Visible) enabled.GrabFocus();
+        if (dropdown.Visible) enabled.GrabFocus();
         else if (previousFocus != null && GodotObject.IsInstanceValid(previousFocus) && previousFocus.IsVisibleInTree() && previousFocus.FocusMode != Control.FocusModeEnum.None) previousFocus.GrabFocus();
         else screen.GetViewport().GuiGetFocusOwner()?.ReleaseFocus();
     }
 
-    internal void ShowMessage(string message) { if (!contents.Visible) Toggle(); status.Text = message; status.Visible = true; }
+    internal void CloseForLockIn()
+    {
+        // Restoring focus to Random here would run its native FocusEntered
+        // selection and replace the concrete pick with a mystery again.
+        dropdown.Hide();
+        preview.Cancel();
+        previousFocus = null;
+        Callable.From(FitPanel).CallDeferred();
+    }
+
+    internal void ShowMessage(string message) { if (!dropdown.Visible) Toggle(); status.Text = message; status.Visible = true; }
     internal void ShowResult(string name)
     {
         toggle.TooltipText = $"Random: {name}\nRandom options (F8)";
@@ -214,7 +307,9 @@ internal sealed class BlacklistPanel
             (key.Keycode == Key.Enter || key.Keycode == Key.KpEnter || key.Keycode == Key.Space);
         confirm |= input.IsActionPressed("ui_select") && !input.IsEcho();
         if (!confirm) return false;
-        if (button.ToggleMode) button.ButtonPressed = !button.ButtonPressed;
+        if (button.Disabled) return true;
+        if (button == immediate || button == atLockIn) button.EmitSignal(BaseButton.SignalName.Pressed);
+        else if (button.ToggleMode) button.ButtonPressed = !button.ButtonPressed;
         else button.EmitSignal(BaseButton.SignalName.Pressed);
         return true;
     }
@@ -234,11 +329,25 @@ internal sealed class BlacklistPanel
 
     private void Refresh()
     {
+        bool active = Mod.Preferences.Enabled;
+        bool locked = screen.Lobby?.LocalPlayer.isReady == true;
+        immediate.SetPressedNoSignal(Mod.Preferences.Reveal == RevealMode.Immediately);
+        atLockIn.SetPressedNoSignal(Mod.Preferences.Reveal == RevealMode.AtLockIn);
+        immediate.Disabled = atLockIn.Disabled = !active || locked;
+        enabled.Disabled = locked;
+        reset.Disabled = locked;
+        modeHint.Text = !active ? "Vanilla Random: revealed at run start.\nCharacter filters are paused." :
+            Mod.Preferences.Reveal == RevealMode.AtLockIn ? "Keep the mystery until Embark / Ready.\nYour included characters still apply." :
+            "Each Random activation reveals a fresh roll.\nThe same character can appear again.";
         foreach (var row in rows)
+        {
             row.Toggle.Text = row.Character.Character.Title.GetFormattedText() + (row.Character.IsLocked ? " (locked)" : "");
+            row.Toggle.Disabled = !active || locked;
+        }
         int count = EligibleCount();
         status.Text = Mod.PreferenceError ?? (Mod.Preferences.Enabled && count == 0 ? "Include at least one character to use Random." : "");
         status.Visible = status.Text.Length > 0;
+        Callable.From(FitPanel).CallDeferred();
     }
 
     private int EligibleCount() => CharacterButtons().Count(b => !b.IsRandom && !b.IsLocked && b.Visible && !Mod.Preferences.ExcludedCharacters.Contains(b.Character.Id.ToString()));

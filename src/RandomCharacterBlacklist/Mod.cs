@@ -33,7 +33,8 @@ public static class Mod
         Patch(harmony, typeof(NCharacterSelectScreen), "_Ready", nameof(ScreenReady), false);
         Patch(harmony, typeof(NCharacterSelectScreen), "_Input", nameof(ScreenInput), true);
         Patch(harmony, typeof(NCharacterSelectButton), "Select", nameof(SelectPrefix), true);
-        GD.Print($"[{Id}] 0.1.2 loaded; local choice patches installed. Preferences: {PreferencePath}");
+        Patch(harmony, typeof(NCharacterSelectScreen), "OnEmbarkPressed", nameof(EmbarkPrefix), true);
+        GD.Print($"[{Id}] 0.1.4 loaded; local choice patches installed. Preferences: {PreferencePath}");
     }
 
     private static void Patch(Harmony harmony, Type type, string target, string patch, bool prefix)
@@ -77,24 +78,42 @@ public static class Mod
     {
         if (!__instance.IsRandom || ____delegate is not NCharacterSelectScreen screen) return true;
         // Vanilla selects on FocusEntered, which doesn't fire on repeated clicks.
-        // While enabled, suppress that placeholder and roll on the Released signal instead.
-        // Disabling the feature lets the original method and seeded resolution run untouched.
-        return !Preferences.Enabled;
+        // Immediate mode rolls on Released instead. Lock-in mode keeps the native
+        // placeholder until Embark; disabling restores the seeded resolver too.
+        return !Preferences.Enabled || Preferences.Reveal == RevealMode.AtLockIn;
     }
 
-    internal static void Roll(NCharacterSelectScreen screen)
+    private static bool EmbarkPrefix(NCharacterSelectScreen __instance,
+        MegaCrit.Sts2.Core.Nodes.GodotExtensions.NButton ____embarkButton)
     {
-        if (!Preferences.Enabled) return;
+        if (!MegaCrit.Sts2.Core.Saves.SaveManager.Instance.SeenFtue("accept_tutorials_ftue")) return true;
+        // Resolve before the native handler disables controls and sends Ready.
+        // Selecting the ordinary button sends the character message first, on
+        // the game's reliable ordered channel. Run-start RNG remains untouched.
+        if (!Preferences.Enabled || Preferences.Reveal != RevealMode.AtLockIn ||
+            __instance.Lobby?.LocalPlayer.character is not MegaCrit.Sts2.Core.Models.Characters.RandomCharacter)
+            return true;
+        bool selected = Roll(__instance, lockIn: true);
+        if (selected && Panels.TryGetValue(__instance, out var panel)) panel.CloseForLockIn();
+        // The tutorial's native callback can re-enter with Embark already disabled.
+        if (!selected) ____embarkButton.Enable();
+        return selected;
+    }
+
+    internal static bool Roll(NCharacterSelectScreen screen, bool lockIn = false)
+    {
+        if (!Preferences.Enabled || screen.Lobby == null || screen.Lobby.LocalPlayer.isReady ||
+            (Preferences.Reveal == RevealMode.AtLockIn && !lockIn)) return false;
         try
         {
             var panel = Panels.GetValue(screen, value => new BlacklistPanel(value));
-            if (PreferenceError != null) { panel.ShowMessage(PreferenceError); return; }
+            if (PreferenceError != null) { panel.ShowMessage(PreferenceError); return false; }
             var pool = SelectionPool.Eligible(panel.CharacterButtons(), b => b.Character.Id.ToString(),
                 b => !b.IsRandom && !b.IsLocked && b.Visible, Preferences.ExcludedCharacters);
             if (!SelectionPool.TryPick(pool, System.Random.Shared.Next, out var chosen))
             {
                 panel.ShowMessage("Include at least one unlocked character to use Random.");
-                return;
+                return false;
             }
             // Native Select() skips an already-selected button. Replay only its feedback
             // in that case; a changed selection already plays both effects itself.
@@ -107,11 +126,13 @@ public static class Mod
             }
             panel.ShowResult(chosen.Character.Title.GetFormattedText());
             GD.Print($"[{Id}] Random chose {chosen.Character.Id} from {pool.Count} eligible characters.");
+            return screen.Lobby.LocalPlayer.character == chosen.Character;
         }
         catch (Exception error)
         {
             GD.PrintErr($"[{Id}] Random selection stopped: {error}");
             if (Panels.TryGetValue(screen, out var panel)) panel.ShowMessage("Random could not select a character. See the game log.");
+            return false;
         }
     }
 }

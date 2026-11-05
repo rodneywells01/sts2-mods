@@ -2,10 +2,14 @@ using System.Text.Json;
 
 namespace RandomCharacterBlacklist;
 
+public enum RevealMode { Immediately, AtLockIn }
+
 public sealed class Preferences
 {
     public int SchemaVersion { get; set; } = 1;
     public bool Enabled { get; set; } = true;
+    // Missing in older settings: preserve the existing immediate-reveal behavior.
+    public RevealMode Reveal { get; set; } = RevealMode.Immediately;
     public HashSet<string> ExcludedCharacters { get; set; } = new(StringComparer.Ordinal);
 
     public static Preferences Load(string path)
@@ -13,7 +17,7 @@ public sealed class Preferences
         if (!File.Exists(path)) return new();
         var value = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path))
             ?? throw new InvalidDataException("The preferences file is empty.");
-        if (value.SchemaVersion != 1 || value.ExcludedCharacters is null || value.ExcludedCharacters.Any(string.IsNullOrWhiteSpace))
+        if (value.SchemaVersion != 1 || !Enum.IsDefined(value.Reveal) || value.ExcludedCharacters is null || value.ExcludedCharacters.Any(string.IsNullOrWhiteSpace))
             throw new InvalidDataException("Unsupported or invalid preferences file.");
         value.ExcludedCharacters = new(value.ExcludedCharacters, StringComparer.Ordinal);
         return value;

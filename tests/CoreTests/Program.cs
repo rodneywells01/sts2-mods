@@ -23,6 +23,11 @@ try
 {
     Check(Preferences.Load(path).ExcludedCharacters.Count == 0, "First run starts empty.");
     Check(Preferences.Load(path).Enabled, "Custom Random is enabled by default.");
+    Check(Preferences.Load(path).Reveal == RevealMode.Immediately, "New preferences preserve immediate reveal default.");
+    File.WriteAllText(path, "{\"SchemaVersion\":1,\"Enabled\":false,\"ExcludedCharacters\":[\"B\"]}");
+    var legacy = Preferences.Load(path);
+    Check(legacy.Reveal == RevealMode.Immediately && !legacy.Enabled && legacy.ExcludedCharacters.Contains("B"),
+        "Legacy settings gain immediate reveal without losing enabled state or exclusions.");
     var preferences = new Preferences { ExcludedCharacters = excluded };
     preferences.Save(path);
     Check(Preferences.Load(path).ExcludedCharacters.SetEquals(excluded), "IDs must survive persistence, including absent mods.");
@@ -32,7 +37,11 @@ try
     preferences.Enabled = false;
     preferences.Save(path);
     Check(!Preferences.Load(path).Enabled, "Disabled mode survives restart.");
-    foreach (string invalid in new[] { "{", "null", "{\"SchemaVersion\":2}", "{\"ExcludedCharacters\":null}" })
+    preferences.Reveal = RevealMode.AtLockIn;
+    preferences.Save(path);
+    Check(Preferences.Load(path).Reveal == RevealMode.AtLockIn && Preferences.Load(path).ExcludedCharacters.SetEquals(preferences.ExcludedCharacters),
+        "Lock-in mode and choices survive restart together.");
+    foreach (string invalid in new[] { "{", "null", "{\"SchemaVersion\":2}", "{\"ExcludedCharacters\":null}", "{\"Reveal\":99}", "{\"Reveal\":null}" })
     {
         File.WriteAllText(path, invalid);
         bool rejected = false;
